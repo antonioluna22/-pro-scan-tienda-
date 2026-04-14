@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#2c3e50">
+    <title>🛒 Pro Scan Tienda</title>
+    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1e3a8a;
+            --secondary: #10b981;
+            --accent: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1f2937;
+            --light: #f8fafc;
+            --gray: #6b7280;
+            --white: #ffffff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--light) 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            padding-bottom: 90px;
+            color: var(--dark);
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+            color: var(--white);
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 20px rgba(30,58,138,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        header h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px 15px;
+        }
+
+        .card {
+            background: var(--white);
+            margin: 15px 0;
+            padding: 25px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px 20px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-scan {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            font-size: 18px;
+        }
+
+        .btn-scan:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(59,130,246,0.4);
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, var(--secondary) 0%, #059669 100%);
+            color: white;
+        }
+
+        .btn-sell {
+            background: linear-gradient(135deg, var(--accent) 0%, #d97706 100%);
+            color: white;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            color: white;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 16px 20px;
+            margin: 12px 0;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+            background: #fafbff;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+            background: white;
+        }
+
+        #video {
+            width: 100%;
+            max-height: 300px;
+            border-radius: 16px;
+            display: none;
+            background: #000;
+            margin: 15px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--white);
+            display: flex;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
+            border-top: 1px solid #f1f5f9;
+            z-index: 1000;
+        }
+
+        .nav button {
+            flex: 1;
+            padding: 18px 10px;
+            border: none;
+            background: none;
+            color: var(--gray);
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .nav button.active {
+            color: var(--secondary);
+            background: rgba(16,185,129,0.1);
+        }
+
+        .nav button.active::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--secondary);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        th {
+            background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+            color: white;
+            padding: 18px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        td {
+            padding: 16px 12px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 15px;
+        }
+
+        tr:hover {
+            background: rgba(16,185,129,0.05);
+        }
+
+        .calc-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            padding: 20px;
+            border-radius: 16px;
+            margin: 20px 0;
+            border: 2px solid #fcd34d;
+        }
+
+        .calc-box h3 {
+            color: var(--accent);
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .result {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--secondary);
+            margin: 10px 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray);
+        }
+
+        .empty-state svg {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .label {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 5px;
+            display: block;
+            font-size: 14px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px 10px;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🛒 Pro Scan Tienda</h1>
+</header>
+
+<div class="container">
+    <video id="video" playsinline></video>
+
+    <!-- INVENTARIO -->
+    <section id="sec-inv">
+        <div class="card">
+            <button class="btn btn-scan" onclick="encenderCamara('in')">
+                📷 Escanear Producto
+            </button>
+            <input type="text" id="in-cod" placeholder="Código de barras" readonly>
+            <div class="label">Nombre del producto</div>
+            <input type="text" id="in-nom" placeholder="Ej: Gaseosa Coca Cola 500ml">
+            <div class="label">Costo por CAJA (S/)</div>
+            <input type="number" id="in-costo" placeholder="0.00" step="0.01">
+            <div class="label">N° de CAJAS compradas</div>
+            <input type="number" id="in-cajas" placeholder="1">
+            <div class="label">Unidades por caja</div>
+            <input type="number" id="in-uxc" placeholder="12" value="1">
+            <button class="btn btn-save" onclick="guardar()">
+                💾 Guardar en Inventario
+            </button>
+        </div>
+
+        <div class="stats" id="stats" style="display:none">
+            <div class="stat-card">
+                <div class="stat-number" id="total-unidades">0</div>
+                <div>Unidades Total</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-cajas">0</div>
+                <div>Cajas Total</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+                <h3 style="margin:0; font-size:1.1rem">📦 Inventario Actual</h3>
+                <button class="btn btn-danger" style="width:auto; padding:8px 16px; font-size:14px" onclick="inventario=[]">
+                    🗑️ Limpiar Todo
+                </button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Unidades</th>
+                        <th>Cajas + Unid.</th>
+                        <th>Costo/Unid.</th>
+                    </tr>
+                </thead>
+                <tbody id="lista"></tbody>
+            </table>
+            <div id="empty-inv" class="empty-state">
+                <div>📦</div>
+                <h3>No hay productos</h3>
+                <p>Escanea tu primer producto para empezar</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- VENTAS -->
+    <section id="sec-ven" style="display:none">
+        <div class="card">
+            <button class="btn btn-scan" onclick="encenderCamara('out')">
+                📷 Escanear para Vender
+            </button>
+            <input type="text" id="v-cod" placeholder="Código del producto" readonly>
+            <div class="label">Cantidad a vender (unidades)</div>
+            <input type="number" id="v-cant" placeholder="1" min="1">
+            <button class="btn btn-sell" onclick="vender()">
+                💰 Confirmar Venta
+            </button>
+        </div>
+    </section>
+
+    <!-- CALCULADORA -->
+    <section id="sec-cal" style="display:none">
+        <div class="card">
+            <h3 style="text-align:center; margin-bottom:25px; color:var(--primary)">🧮 Calculadora de Precios</h3>
+            
+            <div class="label">Sueldo mensual (S/)</div>
+            <input type="number" id="c-sueldo" placeholder="1200" step="0.01">
+            
+            <div class="label">Gastos fijos mensuales (S/)</div>
+            <input type="number" id="c-fijos" placeholder="800" step="0.01">
+            
+            <div class="label">Costo compra por unidad (S/)</div>
+            <input type="number" id="c-costo" placeholder="1.50" step="0.01">
+            
+            <div class="label">Ventas esperadas al mes (unidades)</div>
+            <input type="number" id="c-meta" placeholder="1000" min="1">
+            
+            <div class="calc-box">
+                <h3>💡 Resultados</h3>
+                <p><strong>Costo real por unidad:</strong> <span id="r-costo" class="result">S/ 0.00</span></p>
+                <p style="color:var(--secondary); font-size:1.3rem">
+                    <strong>✅ Precio sugerido:</strong> <span id="r-sugerido" class="result">S/ 0.00</span>
+                    <br><small>(Ganancia del 30% neto)</small>
+                </p>
+            </div>
+        </div>
+    </section>
+</div>
+
+<nav class="nav">
+    <button onclick="ver('inv', this)" class="active">
+        📦<br>Stock
+    </button>
+    <button onclick="ver('ven', this)">
+        🛒<br>Ventas
+    </button>
+    <button onclick="ver('cal', this)">
+        💰<br>Precio
+    </button>
+</nav>
+
+<script>
+    let inventario = JSON.parse(localStorage.getItem('pro_scan_tienda_v2')) || [];
+    const codeReader = new ZXing.BrowserMultiFormatReader();
+    let modoActual = '';
+    let currentStream = null;
+
+    function ver(seccion, btn) {
+        document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+        document.getElementById('sec-' + seccion).style.display = 'block';
+        document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        detenerCamara();
+    }
+
+    async function encenderCamara(modo) {
+        try {
+            modoActual = modo;
+            const video = document.getElementById('video');
+            video.style.display = 'block';
+
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment' } 
+            });
+            currentStream = stream;
+            video.srcObject = stream;
+
+            codeReader.decodeFromVideoDevice(stream, 'video', (result, err) => {
+                if (result) {
+                    if (modoActual === 'in') {
+                        document.getElementById('in-cod').value = result.text;
+                    } else {
+                        document.getElementById('v-cod').value = result.text;
+                    }
+                    detenerCamara();
+                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+                }
+                if (err && !(err.name === 'NotFoundError' || err.name === 'NotAllowedError')) {
+                    console.error('Error escaneando:', err);
+                }
+            });
+        } catch (err) {
+            alert('Error al acceder a la cámara: ' + err.message);
+        }
+    }
+
+    function detenerCamara() {
+        if (currentStream) {
+            currentStream.getTracks().forEach(track => track.stop());
+            currentStream = null;
+        }
+        document.getElementById('video').style.display = 'none';
+        codeReader.reset();
+    }
+
+    function guardar() {
+        const cod = document.getElementById('in-cod').value.trim();
+        const nom = document.getElementById('in-nom').value.trim();
+        const costoC = parseFloat(document.getElementById('in-costo').value) || 0;
+        const numC = parseInt(document.getElementById('in-cajas').value) || 0;
+        const uxc = parseInt(document.getElementById('in-uxc').value) || 1;
+
+        if (!cod || !nom || costoC <= 0 || numC <= 0) {
+            alert('❌ Completa todos los campos correctamente');
+            return;
+        }
+
+        const totalU = numC * uxc;
+        const costoU = costoC / uxc;
+
+        inventario.push({
+            cod, 
+            nom, 
+            totalU, 
+            uxc, 
+            costoU, 
+            id: Date.now()
+        });
+
+        // Limpiar formulario
+        document.getElementById('in-cod').value = '';
+        document.getElementById('in-nom').value = '';
+        document.getElementById('in-costo').value = '';
+        document.getElementById('in-cajas').value = '';
+        document.getElementById('in-uxc').value = '1';
+
+        actualizar();
+        if (navigator.vibrate) navigator.vibrate(200);
+        alert('✅ Producto guardado correctamente');
+    }
+
+    function vender() {
+        const cod = document.getElementById('v-cod').value.trim();
+        const cant = parseInt(document.getElementById('v-cant').value) || 0;
+
+        if (!cod || cant <= 0) {
+            alert('❌
