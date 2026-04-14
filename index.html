@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#2c3e50">
-    <title>🛒 Pro Scan Tienda</title>
-    <script src="https://unpkg.com/@zxing/library@latest"></script>
+    <meta name="theme-color" content="#1e3a8a">
+    <title>Pro Scan Tienda</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #1e3a8a;
+            --primary-light: #3b82f6;
             --secondary: #10b981;
             --accent: #f59e0b;
             --danger: #ef4444;
@@ -17,496 +17,503 @@
             --light: #f8fafc;
             --gray: #6b7280;
             --white: #ffffff;
+            --border: #e2e8f0;
         }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, var(--light) 0%, #e2e8f0 100%);
+            background: #f0f4f8;
             min-height: 100vh;
             padding-bottom: 90px;
             color: var(--dark);
         }
-
         header {
-            background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
-            color: var(--white);
-            padding: 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 18px 20px;
             text-align: center;
             box-shadow: 0 4px 20px rgba(30,58,138,0.3);
             position: sticky;
             top: 0;
             z-index: 100;
         }
+        header h1 { font-size: 1.3rem; font-weight: 700; }
 
-        header h1 {
-            font-size: 1.4rem;
-            font-weight: 700;
-            margin: 0;
+        /* TOAST */
+        .toast {
+            position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+            background: #1f2937; color: white; padding: 10px 22px;
+            border-radius: 50px; font-size: 13px; font-weight: 500;
+            z-index: 9999; opacity: 0; transition: opacity .25s;
+            pointer-events: none; white-space: nowrap; max-width: 90vw;
+            text-overflow: ellipsis; overflow: hidden;
         }
+        .toast.show { opacity: 1; }
 
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px 15px;
-        }
+        .container { max-width: 600px; margin: 0 auto; padding: 16px 14px; }
+        section { display: none; }
+        section.active { display: block; }
 
         .card {
-            background: var(--white);
-            margin: 15px 0;
-            padding: 25px;
+            background: white;
+            margin: 14px 0;
+            padding: 22px;
             border-radius: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
-            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+            border: 1px solid var(--border);
+        }
+        .card-title {
+            font-size: 14px; font-weight: 600; color: var(--primary);
+            text-transform: uppercase; letter-spacing: .5px; margin-bottom: 16px;
         }
 
-        .card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+        /* SCANNER VIDEO */
+        .video-wrap { position: relative; margin: 0 0 14px; display: none; }
+        .video-wrap video {
+            width: 100%; max-height: 260px; border-radius: 14px;
+            background: #000; display: block;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
         }
+        .scan-corners {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 55%; aspect-ratio: 1;
+            pointer-events: none;
+        }
+        .scan-corners::before, .scan-corners::after,
+        .scan-corners span::before, .scan-corners span::after {
+            content: ''; position: absolute; width: 22px; height: 22px;
+            border-color: #f59e0b; border-style: solid;
+        }
+        .scan-corners::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+        .scan-corners::after  { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+        .scan-corners span::before { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+        .scan-corners span::after  { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
 
+        /* FIELDS */
+        .field { margin-bottom: 12px; }
+        .field label {
+            font-size: 12px; font-weight: 600; color: var(--gray);
+            display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .4px;
+        }
+        .field input {
+            width: 100%; padding: 13px 16px;
+            border: 1.5px solid var(--border); border-radius: 12px;
+            font-size: 15px; font-family: 'Poppins', sans-serif;
+            background: #fafbff; color: var(--dark);
+            transition: border-color .2s, background .2s; outline: none;
+        }
+        .field input:focus { border-color: var(--primary-light); background: white; }
+
+        /* BUTTONS */
         .btn {
-            width: 100%;
-            padding: 16px 20px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 8px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            width: 100%; padding: 15px 20px; border: none; border-radius: 12px;
+            font-size: 15px; font-weight: 600; cursor: pointer;
+            transition: opacity .15s, transform .1s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            margin: 6px 0; font-family: 'Poppins', sans-serif;
         }
+        .btn:active { transform: scale(.97); opacity: .9; }
+        .btn-scan { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; }
+        .btn-save { background: linear-gradient(135deg, var(--secondary), #059669); color: white; }
+        .btn-sell { background: linear-gradient(135deg, var(--accent), #d97706); color: white; }
+        .btn-danger { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; }
+        .btn-sm { width: auto; padding: 8px 14px; font-size: 13px; margin: 0; }
 
-        .btn-scan {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            color: white;
-            font-size: 18px;
-        }
-
-        .btn-scan:hover {
-            transform: scale(1.02);
-            box-shadow: 0 8px 25px rgba(59,130,246,0.4);
-        }
-
-        .btn-save {
-            background: linear-gradient(135deg, var(--secondary) 0%, #059669 100%);
-            color: white;
-        }
-
-        .btn-sell {
-            background: linear-gradient(135deg, var(--accent) 0%, #d97706 100%);
-            color: white;
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
-            color: white;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 16px 20px;
-            margin: 12px 0;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            font-size: 16px;
-            font-family: inherit;
-            transition: all 0.3s ease;
-            background: #fafbff;
-        }
-
-        input:focus, select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
-            background: white;
-        }
-
-        #video {
-            width: 100%;
-            max-height: 300px;
-            border-radius: 16px;
-            display: none;
-            background: #000;
-            margin: 15px 0;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-        }
-
-        .nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--white);
-            display: flex;
-            box-shadow: 0 -4px 20px rgba(0,0,0,0.1);
-            border-top: 1px solid #f1f5f9;
-            z-index: 1000;
-        }
-
-        .nav button {
-            flex: 1;
-            padding: 18px 10px;
-            border: none;
-            background: none;
-            color: var(--gray);
-            font-size: 12px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .nav button.active {
-            color: var(--secondary);
-            background: rgba(16,185,129,0.1);
-        }
-
-        .nav button.active::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: var(--secondary);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-        }
-
-        th {
-            background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
-            color: white;
-            padding: 18px 12px;
-            text-align: left;
-            font-weight: 600;
-            font-size: 14px;
-        }
-
-        td {
-            padding: 16px 12px;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 15px;
-        }
-
-        tr:hover {
-            background: rgba(16,185,129,0.05);
-        }
-
-        .calc-box {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-            padding: 20px;
-            border-radius: 16px;
-            margin: 20px 0;
-            border: 2px solid #fcd34d;
-        }
-
-        .calc-box h3 {
-            color: var(--accent);
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-        }
-
-        .result {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--secondary);
-            margin: 10px 0;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--gray);
-        }
-
-        .empty-state svg {
-            font-size: 4rem;
-            margin-bottom: 15px;
-            opacity: 0.5;
-        }
-
-        .label {
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 5px;
-            display: block;
-            font-size: 14px;
-        }
-
-        .stats {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin: 20px 0;
-        }
-
+        /* STATS */
+        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
         .stat-card {
-            background: white;
-            padding: 20px;
-            border-radius: 16px;
-            text-align: center;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            background: white; padding: 16px; border-radius: 16px;
+            text-align: center; border: 1px solid var(--border);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
         }
+        .stat-number { font-size: 26px; font-weight: 700; color: var(--secondary); }
+        .stat-label { font-size: 11px; color: var(--gray); margin-top: 2px; }
 
-        .stat-number {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--secondary);
+        /* PRODUCT STATUS (venta) */
+        .prod-status {
+            background: #ecfdf5; border: 1px solid #6ee7b7;
+            border-radius: 12px; padding: 12px 16px; margin-bottom: 10px;
+            display: none;
         }
+        .prod-status.error { background: #fef2f2; border-color: #fca5a5; }
+        .prod-status-name { font-size: 14px; font-weight: 600; color: #065f46; }
+        .prod-status.error .prod-status-name { color: #991b1b; }
+        .prod-status-stock { font-size: 12px; color: #047857; margin-top: 2px; }
+        .prod-status.error .prod-status-stock { color: #b91c1c; }
 
-        @media (max-width: 480px) {
-            .container {
-                padding: 15px 10px;
-            }
-            
-            .card {
-                padding: 20px;
-            }
+        /* INVENTORY LIST */
+        .inv-list { margin-top: 4px; }
+        .inv-empty { text-align: center; padding: 32px 16px; color: var(--gray); }
+        .inv-empty .icon { font-size: 40px; margin-bottom: 10px; }
+        .inv-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 12px 0; border-bottom: 1px solid var(--border);
+        }
+        .inv-item:last-child { border-bottom: none; }
+        .inv-emoji {
+            width: 42px; height: 42px; border-radius: 12px;
+            background: #ecfdf5; display: flex; align-items: center;
+            justify-content: center; font-size: 20px; flex-shrink: 0;
+        }
+        .inv-info { flex: 1; min-width: 0; }
+        .inv-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .inv-code { font-size: 10px; color: var(--gray); font-family: monospace; margin-top: 1px; }
+        .inv-right { text-align: right; flex-shrink: 0; }
+        .inv-units { font-size: 16px; font-weight: 700; color: var(--secondary); }
+        .inv-boxes { font-size: 10px; color: var(--gray); margin-top: 1px; }
+
+        /* CALC */
+        .calc-result {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            border-radius: 16px; padding: 22px; color: white;
+            text-align: center; margin-top: 16px; display: none;
+        }
+        .calc-result .label { font-size: 11px; opacity: .75; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+        .calc-result .price { font-size: 32px; font-weight: 700; margin-bottom: 16px; }
+        .calc-mini { display: flex; justify-content: space-around; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.2); }
+        .calc-mini-item .lbl { font-size: 10px; opacity: .7; }
+        .calc-mini-item .num { font-size: 14px; font-weight: 600; margin-top: 2px; }
+
+        /* NAV */
+        .nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; display: flex;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
+            border-top: 1px solid var(--border); z-index: 1000;
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        .nav-btn {
+            flex: 1; padding: 12px 8px 10px; border: none;
+            background: none; color: var(--gray); font-size: 11px;
+            font-weight: 500; font-family: 'Poppins', sans-serif;
+            display: flex; flex-direction: column; align-items: center;
+            gap: 4px; cursor: pointer; transition: color .2s; position: relative;
+        }
+        .nav-btn .icon { font-size: 22px; }
+        .nav-btn.active { color: var(--secondary); }
+        .nav-btn.active::before {
+            content: ''; position: absolute; top: 0; left: 20%; right: 20%;
+            height: 3px; background: var(--secondary); border-radius: 0 0 4px 4px;
         }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>🛒 Pro Scan Tienda</h1>
-</header>
+<header><h1>🛒 Pro Scan Tienda</h1></header>
+<div class="toast" id="toast"></div>
 
 <div class="container">
-    <video id="video" playsinline></video>
 
     <!-- INVENTARIO -->
-    <section id="sec-inv">
-        <div class="card">
-            <button class="btn btn-scan" onclick="encenderCamara('in')">
-                📷 Escanear Producto
-            </button>
-            <input type="text" id="in-cod" placeholder="Código de barras" readonly>
-            <div class="label">Nombre del producto</div>
-            <input type="text" id="in-nom" placeholder="Ej: Gaseosa Coca Cola 500ml">
-            <div class="label">Costo por CAJA (S/)</div>
-            <input type="number" id="in-costo" placeholder="0.00" step="0.01">
-            <div class="label">N° de CAJAS compradas</div>
-            <input type="number" id="in-cajas" placeholder="1">
-            <div class="label">Unidades por caja</div>
-            <input type="number" id="in-uxc" placeholder="12" value="1">
-            <button class="btn btn-save" onclick="guardar()">
-                💾 Guardar en Inventario
-            </button>
-        </div>
-
-        <div class="stats" id="stats" style="display:none">
+    <section id="sec-inv" class="active">
+        <div class="stats">
             <div class="stat-card">
-                <div class="stat-number" id="total-unidades">0</div>
-                <div>Unidades Total</div>
+                <div class="stat-number" id="total-prods">0</div>
+                <div class="stat-label">Productos</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number" id="total-cajas">0</div>
-                <div>Cajas Total</div>
+                <div class="stat-number" id="total-units">0</div>
+                <div class="stat-label">Unidades totales</div>
             </div>
         </div>
-
         <div class="card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
-                <h3 style="margin:0; font-size:1.1rem">📦 Inventario Actual</h3>
-                <button class="btn btn-danger" style="width:auto; padding:8px 16px; font-size:14px" onclick="inventario=[]">
-                    🗑️ Limpiar Todo
-                </button>
+            <div class="card-title">Registrar compra</div>
+            <button class="btn btn-scan" onclick="encenderCamara('in')">📷 Escanear código</button>
+            <div class="video-wrap" id="wrap-in"><video id="video-in" playsinline></video><div class="scan-corners"><span></span></div></div>
+            <div class="field"><label>Código de barras</label><input type="text" id="in-cod" placeholder="Escanea o escribe el código"></div>
+            <div class="field"><label>Nombre del producto</label><input type="text" id="in-nom" placeholder="Ej: Gaseosa 500ml"></div>
+            <div class="field"><label>Costo por caja (S/)</label><input type="number" id="in-costo" placeholder="0.00" step="0.01" inputmode="decimal"></div>
+            <div class="field"><label>Número de cajas compradas</label><input type="number" id="in-cajas" placeholder="1" inputmode="numeric"></div>
+            <div class="field"><label>Unidades por caja</label><input type="number" id="in-uxc" placeholder="12" inputmode="numeric"></div>
+            <button class="btn btn-save" onclick="guardar()">💾 Guardar en inventario</button>
+        </div>
+        <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+                <div class="card-title" style="margin:0">Inventario actual</div>
+                <button class="btn btn-danger btn-sm" onclick="limpiarTodo()">🗑️ Limpiar</button>
             </div>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th>Unidades</th>
-                        <th>Cajas + Unid.</th>
-                        <th>Costo/Unid.</th>
-                    </tr>
-                </thead>
-                <tbody id="lista"></tbody>
-            </table>
-            <div id="empty-inv" class="empty-state">
-                <div>📦</div>
-                <h3>No hay productos</h3>
-                <p>Escanea tu primer producto para empezar</p>
+            <div class="inv-list" id="lista">
+                <div class="inv-empty"><div class="icon">📦</div><p>Sin productos aún.<br>Registra tu primera compra.</p></div>
             </div>
         </div>
     </section>
 
     <!-- VENTAS -->
-    <section id="sec-ven" style="display:none">
+    <section id="sec-ven">
         <div class="card">
-            <button class="btn btn-scan" onclick="encenderCamara('out')">
-                📷 Escanear para Vender
-            </button>
-            <input type="text" id="v-cod" placeholder="Código del producto" readonly>
-            <div class="label">Cantidad a vender (unidades)</div>
-            <input type="number" id="v-cant" placeholder="1" min="1">
-            <button class="btn btn-sell" onclick="vender()">
-                💰 Confirmar Venta
-            </button>
+            <div class="card-title">Registrar venta</div>
+            <button class="btn btn-scan" onclick="encenderCamara('out')">📷 Escanear para vender</button>
+            <div class="video-wrap" id="wrap-out"><video id="video-out" playsinline></video><div class="scan-corners"><span></span></div></div>
+            <div class="field"><label>Código del producto</label><input type="text" id="v-cod" placeholder="Escanea o escribe el código" oninput="buscarProducto()"></div>
+            <div class="prod-status" id="prod-status">
+                <div class="prod-status-name" id="prod-nombre">-</div>
+                <div class="prod-status-stock" id="prod-stock">-</div>
+            </div>
+            <div class="field"><label>Cantidad de unidades a vender</label><input type="number" id="v-cant" placeholder="1" inputmode="numeric"></div>
+            <button class="btn btn-sell" onclick="vender()">💰 Confirmar venta</button>
         </div>
     </section>
 
     <!-- CALCULADORA -->
-    <section id="sec-cal" style="display:none">
+    <section id="sec-cal">
         <div class="card">
-            <h3 style="text-align:center; margin-bottom:25px; color:var(--primary)">🧮 Calculadora de Precios</h3>
-            
-            <div class="label">Sueldo mensual (S/)</div>
-            <input type="number" id="c-sueldo" placeholder="1200" step="0.01">
-            
-            <div class="label">Gastos fijos mensuales (S/)</div>
-            <input type="number" id="c-fijos" placeholder="800" step="0.01">
-            
-            <div class="label">Costo compra por unidad (S/)</div>
-            <input type="number" id="c-costo" placeholder="1.50" step="0.01">
-            
-            <div class="label">Ventas esperadas al mes (unidades)</div>
-            <input type="number" id="c-meta" placeholder="1000" min="1">
-            
-            <div class="calc-box">
-                <h3>💡 Resultados</h3>
-                <p><strong>Costo real por unidad:</strong> <span id="r-costo" class="result">S/ 0.00</span></p>
-                <p style="color:var(--secondary); font-size:1.3rem">
-                    <strong>✅ Precio sugerido:</strong> <span id="r-sugerido" class="result">S/ 0.00</span>
-                    <br><small>(Ganancia del 30% neto)</small>
-                </p>
+            <div class="card-title">Calculadora de precio sugerido</div>
+            <div class="field"><label>Sueldo mensual del vendedor (S/)</label><input type="number" id="c-sueldo" placeholder="0.00" step="0.01" oninput="recalculo()" inputmode="decimal"></div>
+            <div class="field"><label>Gastos fijos al mes (luz, alquiler…)</label><input type="number" id="c-fijos" placeholder="0.00" step="0.01" oninput="recalculo()" inputmode="decimal"></div>
+            <div class="field"><label>Costo de compra por unidad (S/)</label><input type="number" id="c-costo" placeholder="0.00" step="0.01" oninput="recalculo()" inputmode="decimal"></div>
+            <div class="field"><label>Ventas esperadas al mes (unidades)</label><input type="number" id="c-meta" placeholder="0" oninput="recalculo()" inputmode="numeric"></div>
+            <div class="calc-result" id="calc-result">
+                <div class="label">Precio sugerido de venta (30% ganancia)</div>
+                <div class="price" id="r-sugerido">S/ 0.00</div>
+                <div class="calc-mini">
+                    <div class="calc-mini-item"><div class="lbl">Costo real/u</div><div class="num" id="r-costo">S/ 0.00</div></div>
+                    <div class="calc-mini-item"><div class="lbl">Ganancia</div><div class="num">30%</div></div>
+                    <div class="calc-mini-item"><div class="lbl">Gasto/u</div><div class="num" id="r-gasto">S/ 0.00</div></div>
+                </div>
             </div>
         </div>
+        <div class="card">
+            <div class="card-title">¿Cómo se calcula?</div>
+            <p style="font-size:13px;color:var(--gray);line-height:1.7">
+                El precio incluye el costo del producto más una parte proporcional de tus gastos mensuales dividido entre las ventas esperadas. Luego se agrega un <strong>30% de ganancia neta</strong>.<br><br>
+                <code style="background:#f0f4f8;padding:4px 8px;border-radius:6px;font-size:12px">precio = (costo_u + gastos_mes / ventas) ÷ 0.70</code>
+            </p>
+        </div>
     </section>
+
 </div>
 
 <nav class="nav">
-    <button onclick="ver('inv', this)" class="active">
-        📦<br>Stock
-    </button>
-    <button onclick="ver('ven', this)">
-        🛒<br>Ventas
-    </button>
-    <button onclick="ver('cal', this)">
-        💰<br>Precio
-    </button>
+    <button class="nav-btn active" onclick="ver('inv',this)"><span class="icon">📦</span>Inventario</button>
+    <button class="nav-btn" onclick="ver('ven',this)"><span class="icon">🛒</span>Ventas</button>
+    <button class="nav-btn" onclick="ver('cal',this)"><span class="icon">💰</span>Precios</button>
 </nav>
 
+<script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
 <script>
-    let inventario = JSON.parse(localStorage.getItem('pro_scan_tienda_v2')) || [];
-    const codeReader = new ZXing.BrowserMultiFormatReader();
-    let modoActual = '';
-    let currentStream = null;
+// --- Estado ---
+let inventario = [];
+try { inventario = JSON.parse(localStorage.getItem('proscan_v3') || '[]'); } catch(e) {}
 
-    function ver(seccion, btn) {
-        document.querySelectorAll('section').forEach(s => s.style.display = 'none');
-        document.getElementById('sec-' + seccion).style.display = 'block';
-        document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        detenerCamara();
-    }
+let activeStream = null;
+let activeReader = null;
+let activeMode = '';
 
-    async function encenderCamara(modo) {
-        try {
-            modoActual = modo;
-            const video = document.getElementById('video');
-            video.style.display = 'block';
+// --- Toast ---
+function toast(msg, dur) {
+    dur = dur || 2800;
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, dur);
+}
 
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
+// --- Navegación ---
+function ver(sec, btn) {
+    document.querySelectorAll('section').forEach(function(s){ s.classList.remove('active'); });
+    document.getElementById('sec-' + sec).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    pararCamara();
+}
+
+// --- Cámara ---
+function pararCamara() {
+    if (activeReader) { try { activeReader.reset(); } catch(e){} activeReader = null; }
+    if (activeStream) { activeStream.getTracks().forEach(function(t){ t.stop(); }); activeStream = null; }
+    document.getElementById('wrap-in').style.display = 'none';
+    document.getElementById('wrap-out').style.display = 'none';
+}
+
+function encenderCamara(modo) {
+    pararCamara();
+    activeMode = modo;
+    var wrapId = modo === 'in' ? 'wrap-in' : 'wrap-out';
+    var videoId = modo === 'in' ? 'video-in' : 'video-out';
+    document.getElementById(wrapId).style.display = 'block';
+
+    if (typeof ZXing === 'undefined') { toast('⚠️ Librería de escaneo no disponible'); return; }
+
+    var reader = new ZXing.BrowserMultiFormatReader();
+    activeReader = reader;
+
+    reader.decodeFromVideoDevice(null, videoId, function(result, err) {
+        if (result) {
+            var cod = result.text || (result.getText && result.getText()) || '';
+            if (activeMode === 'in') {
+                document.getElementById('in-cod').value = cod;
+                // Autocompletar nombre si ya existe
+                var prev = inventario.find(function(p){ return p.cod === cod; });
+                if (prev) document.getElementById('in-nom').value = prev.nom;
+            } else {
+                document.getElementById('v-cod').value = cod;
+                buscarProducto();
             }
-
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { facingMode: 'environment' } 
-            });
-            currentStream = stream;
-            video.srcObject = stream;
-
-            codeReader.decodeFromVideoDevice(stream, 'video', (result, err) => {
-                if (result) {
-                    if (modoActual === 'in') {
-                        document.getElementById('in-cod').value = result.text;
-                    } else {
-                        document.getElementById('v-cod').value = result.text;
-                    }
-                    detenerCamara();
-                    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
-                }
-                if (err && !(err.name === 'NotFoundError' || err.name === 'NotAllowedError')) {
-                    console.error('Error escaneando:', err);
-                }
-            });
-        } catch (err) {
-            alert('Error al acceder a la cámara: ' + err.message);
+            if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+            pararCamara();
+            toast('✅ Código escaneado: ' + cod);
         }
+    });
+}
+
+// --- Guardar producto ---
+function guardar() {
+    var cod   = document.getElementById('in-cod').value.trim();
+    var nom   = document.getElementById('in-nom').value.trim();
+    var costoC = parseFloat(document.getElementById('in-costo').value) || 0;
+    var numC  = parseInt(document.getElementById('in-cajas').value)  || 0;
+    var uxc   = parseInt(document.getElementById('in-uxc').value)    || 1;
+
+    if (!cod)        return toast('⚠️ Falta el código del producto');
+    if (!nom)        return toast('⚠️ Falta el nombre del producto');
+    if (costoC <= 0) return toast('⚠️ El costo por caja debe ser mayor a 0');
+    if (numC   <= 0) return toast('⚠️ Ingresa cuántas cajas compraste');
+
+    var totalU = numC * uxc;
+    var costoU = costoC / uxc;
+
+    // Si ya existe ese código, actualizar (sumar stock)
+    var existente = inventario.find(function(p){ return p.cod === cod; });
+    if (existente) {
+        existente.totalU += totalU;
+        existente.nom    = nom;
+        existente.costoU = costoU;
+        existente.uxc    = uxc;
+        toast('🔄 Stock actualizado: +' + totalU + ' unidades');
+    } else {
+        inventario.push({ cod: cod, nom: nom, totalU: totalU, uxc: uxc, costoU: costoU, id: Date.now() });
+        toast('✅ Producto guardado correctamente');
     }
 
-    function detenerCamara() {
-        if (currentStream) {
-            currentStream.getTracks().forEach(track => track.stop());
-            currentStream = null;
-        }
-        document.getElementById('video').style.display = 'none';
-        codeReader.reset();
+    // Limpiar formulario
+    ['in-cod','in-nom','in-costo','in-cajas'].forEach(function(id){ document.getElementById(id).value = ''; });
+    document.getElementById('in-uxc').value = '';
+
+    if (navigator.vibrate) navigator.vibrate(120);
+    guardarLS();
+    renderLista();
+}
+
+// --- Buscar producto al vender ---
+function buscarProducto() {
+    var cod = document.getElementById('v-cod').value.trim();
+    var status = document.getElementById('prod-status');
+    if (!cod) { status.style.display = 'none'; return; }
+    var total = inventario.filter(function(p){ return p.cod === cod; }).reduce(function(s,p){ return s + p.totalU; }, 0);
+    var prod = inventario.find(function(p){ return p.cod === cod; });
+    status.style.display = 'block';
+    if (prod && total > 0) {
+        status.classList.remove('error');
+        document.getElementById('prod-nombre').textContent = prod.nom;
+        document.getElementById('prod-stock').textContent = 'Stock disponible: ' + total + ' unidades';
+    } else {
+        status.classList.add('error');
+        document.getElementById('prod-nombre').textContent = 'Producto no encontrado';
+        document.getElementById('prod-stock').textContent = 'Código: ' + cod;
     }
+}
 
-    function guardar() {
-        const cod = document.getElementById('in-cod').value.trim();
-        const nom = document.getElementById('in-nom').value.trim();
-        const costoC = parseFloat(document.getElementById('in-costo').value) || 0;
-        const numC = parseInt(document.getElementById('in-cajas').value) || 0;
-        const uxc = parseInt(document.getElementById('in-uxc').value) || 1;
+// --- Vender ---
+function vender() {
+    var cod  = document.getElementById('v-cod').value.trim();
+    var cant = parseInt(document.getElementById('v-cant').value) || 0;
 
-        if (!cod || !nom || costoC <= 0 || numC <= 0) {
-            alert('❌ Completa todos los campos correctamente');
-            return;
-        }
+    if (!cod)      return toast('⚠️ Escanea o escribe el código del producto');
+    if (cant <= 0) return toast('⚠️ Ingresa la cantidad a vender');
 
-        const totalU = numC * uxc;
-        const costoU = costoC / uxc;
+    var total = inventario.filter(function(p){ return p.cod === cod; }).reduce(function(s,p){ return s + p.totalU; }, 0);
+    if (total === 0) return toast('❌ Producto no encontrado en inventario');
+    if (total < cant) return toast('❌ Stock insuficiente — hay solo ' + total + ' unidades');
 
-        inventario.push({
-            cod, 
-            nom, 
-            totalU, 
-            uxc, 
-            costoU, 
-            id: Date.now()
-        });
+    var restante = cant;
+    inventario.forEach(function(p) {
+        if (restante <= 0) return;
+        if (p.cod !== cod) return;
+        if (p.totalU <= restante) { restante -= p.totalU; p.totalU = 0; }
+        else { p.totalU -= restante; restante = 0; }
+    });
+    inventario = inventario.filter(function(p){ return p.totalU > 0; });
 
-        // Limpiar formulario
-        document.getElementById('in-cod').value = '';
-        document.getElementById('in-nom').value = '';
-        document.getElementById('in-costo').value = '';
-        document.getElementById('in-cajas').value = '';
-        document.getElementById('in-uxc').value = '1';
+    document.getElementById('v-cod').value = '';
+    document.getElementById('v-cant').value = '';
+    document.getElementById('prod-status').style.display = 'none';
 
-        actualizar();
-        if (navigator.vibrate) navigator.vibrate(200);
-        alert('✅ Producto guardado correctamente');
+    if (navigator.vibrate) navigator.vibrate(120);
+    guardarLS();
+    renderLista();
+    toast('✅ Venta registrada: -' + cant + ' unidades');
+}
+
+// --- Limpiar todo ---
+function limpiarTodo() {
+    if (!confirm('¿Seguro que quieres borrar todo el inventario?')) return;
+    inventario = [];
+    guardarLS();
+    renderLista();
+    toast('🗑️ Inventario borrado');
+}
+
+// --- Calculadora ---
+function recalculo() {
+    var s = parseFloat(document.getElementById('c-sueldo').value) || 0;
+    var f = parseFloat(document.getElementById('c-fijos').value)  || 0;
+    var c = parseFloat(document.getElementById('c-costo').value)  || 0;
+    var q = parseFloat(document.getElementById('c-meta').value)   || 1;
+    if (c <= 0 && s <= 0 && f <= 0) { document.getElementById('calc-result').style.display = 'none'; return; }
+    var gastoPorU = (s + f) / q;
+    var costoReal = c + gastoPorU;
+    var sugerido  = costoReal / 0.70;
+    document.getElementById('r-costo').textContent    = 'S/ ' + costoReal.toFixed(2);
+    document.getElementById('r-gasto').textContent    = 'S/ ' + gastoPorU.toFixed(2);
+    document.getElementById('r-sugerido').textContent = 'S/ ' + sugerido.toFixed(2);
+    document.getElementById('calc-result').style.display = 'block';
+}
+
+// --- Render lista ---
+var emojis = ['🧃','📦','🥤','🍫','🧴','🥛','🛒','🍃','🧂','🫙'];
+function renderLista() {
+    var lista = document.getElementById('lista');
+    // Agrupar por código
+    var grouped = {};
+    inventario.forEach(function(p) {
+        if (!grouped[p.cod]) grouped[p.cod] = { cod: p.cod, nom: p.nom, totalU: 0, uxc: p.uxc };
+        grouped[p.cod].totalU += p.totalU;
+    });
+    var items = Object.values(grouped);
+
+    // Stats
+    var totalU = items.reduce(function(s,p){ return s + p.totalU; }, 0);
+    document.getElementById('total-prods').textContent = items.length;
+    document.getElementById('total-units').textContent = totalU;
+
+    if (items.length === 0) {
+        lista.innerHTML = '<div class="inv-empty"><div class="icon">📦</div><p>Sin productos aún.<br>Registra tu primera compra.</p></div>';
+        return;
     }
+    lista.innerHTML = items.map(function(p, i) {
+        var cj = Math.floor(p.totalU / p.uxc);
+        var un = p.totalU % p.uxc;
+        var em = emojis[i % emojis.length];
+        return '<div class="inv-item">'
+            + '<div class="inv-emoji">' + em + '</div>'
+            + '<div class="inv-info">'
+            +   '<div class="inv-name">' + p.nom + '</div>'
+            +   '<div class="inv-code">' + p.cod + '</div>'
+            + '</div>'
+            + '<div class="inv-right">'
+            +   '<div class="inv-units">' + p.totalU + ' u</div>'
+            +   '<div class="inv-boxes">' + cj + ' c + ' + un + ' u</div>'
+            + '</div>'
+            + '</div>';
+    }).join('');
+}
 
-    function vender() {
-        const cod = document.getElementById('v-cod').value.trim();
-        const cant = parseInt(document.getElementById('v-cant').value) || 0;
+function guardarLS() {
+    try { localStorage.setItem('proscan_v3', JSON.stringify(inventario)); } catch(e) {}
+}
 
-        if (!cod || cant <= 0) {
-            alert('❌
+renderLista();
+</script>
+</body>
+</html>
