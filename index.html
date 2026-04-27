@@ -1,722 +1,1886 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-MX">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#1e3a8a">
-    <title>Pro Scan Tienda</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #1e3a8a;
-            --primary-light: #3b82f6;
-            --secondary: #10b981;
-            --accent: #f59e0b;
-            --danger: #ef4444;
-            --dark: #1f2937;
-            --light: #f8fafc;
-            --gray: #6b7280;
-            --white: #ffffff;
-            --border: #e2e8f0;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: #f0f4f8;
-            min-height: 100vh;
-            padding-bottom: 90px;
-            color: var(--dark);
-        }
-        header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-            color: white;
-            padding: 18px 20px;
-            text-align: center;
-            box-shadow: 0 4px 20px rgba(30,58,138,0.3);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        header h1 { font-size: 1.3rem; font-weight: 700; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AbarroTech POS</title>
+<link href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Instrument+Serif:ital@0;1&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #06090f;
+  --bg2:      #090d17;
+  --s1:       #0d1220;
+  --s2:       #111827;
+  --s3:       #162035;
+  --b1:       #1a2d4a;
+  --b2:       #1e3660;
+  --navy:     #0f2744;
+  --blue:     #1d6feb;
+  --blue2:    #2e7fff;
+  --blue3:    #60a8ff;
+  --glow:     rgba(29,111,235,.4);
+  --glowl:    rgba(29,111,235,.12);
+  --teal:     #0dcfb0;
+  --teal-d:   rgba(13,207,176,.1);
+  --amber:    #f5a623;
+  --amber-d:  rgba(245,166,35,.1);
+  --rose:     #f04b6b;
+  --rose-d:   rgba(240,75,107,.1);
+  --lime:     #56d364;
+  --lime-d:   rgba(86,211,100,.1);
+  --violet:   #9b7bff;
+  --violet-d: rgba(155,123,255,.1);
+  --tx:  #dde6f7;
+  --tx2: #6b87b0;
+  --tx3: #2e4060;
+  --sidebar-w: 72px;
+}
 
-        /* TOAST */
-        .toast {
-            position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
-            background: #1f2937; color: white; padding: 10px 22px;
-            border-radius: 50px; font-size: 13px; font-weight: 500;
-            z-index: 9999; opacity: 0; transition: opacity .25s;
-            pointer-events: none; white-space: nowrap; max-width: 90vw;
-            text-overflow: ellipsis; overflow: hidden;
-        }
-        .toast.show { opacity: 1; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; overflow: hidden; }
+body {
+  font-family: 'Familjen Grotesk', sans-serif;
+  background: var(--bg);
+  color: var(--tx);
+  height: 100vh;
+  display: flex;
+  overflow: hidden;
+}
 
-        .container { max-width: 600px; margin: 0 auto; padding: 16px 14px; }
-        section { display: none; }
-        section.active { display: block; }
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  height: 100vh;
+  background: var(--s1);
+  border-right: 1px solid var(--b1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 18px 0 14px;
+  position: relative;
+  z-index: 50;
+  flex-shrink: 0;
+}
+.sidebar::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0; bottom: 0;
+  width: 1px;
+  background: linear-gradient(180deg, transparent, var(--blue) 30%, var(--teal) 70%, transparent);
+  opacity: .4;
+}
+.sb-logo {
+  width: 40px; height: 40px;
+  background: linear-gradient(135deg, var(--blue), var(--teal));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Fira Code', monospace;
+  font-weight: 500; font-size: .75rem; color: #fff;
+  letter-spacing: 0;
+  box-shadow: 0 0 20px var(--glow);
+  margin-bottom: 28px;
+  flex-shrink: 0;
+}
+.sb-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; width: 100%; padding: 0 10px; }
+.sb-btn {
+  width: 100%; aspect-ratio: 1;
+  border: none; background: none;
+  border-radius: 10px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: background .15s;
+  color: var(--tx3);
+  position: relative;
+}
+.sb-btn:hover { background: var(--s2); color: var(--tx2); }
+.sb-btn.active {
+  background: var(--glowl);
+  color: var(--blue3);
+}
+.sb-btn.active::before {
+  content: '';
+  position: absolute;
+  left: -10px; top: 50%;
+  transform: translateY(-50%);
+  width: 3px; height: 60%;
+  background: var(--blue3);
+  border-radius: 0 3px 3px 0;
+}
+.sb-icon { font-size: 1.1rem; line-height: 1; }
+.sb-lbl { font-size: .56rem; font-weight: 600; letter-spacing: .5px; text-transform: uppercase; font-family: 'Fira Code', monospace; }
+.sb-bottom { padding: 0 10px; display: flex; flex-direction: column; gap: 4px; }
+.sb-clock {
+  font-family: 'Fira Code', monospace;
+  font-size: .52rem; color: var(--tx3);
+  text-align: center; line-height: 1.5;
+  padding: 6px 2px;
+  background: var(--s2); border-radius: 8px;
+  border: 1px solid var(--b1);
+}
 
-        .card {
-            background: white;
-            margin: 14px 0;
-            padding: 22px;
-            border-radius: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.07);
-            border: 1px solid var(--border);
-        }
-        .card-title {
-            font-size: 14px; font-weight: 600; color: var(--primary);
-            text-transform: uppercase; letter-spacing: .5px; margin-bottom: 16px;
-        }
+/* ── MAIN SHELL ── */
+.shell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  min-width: 0;
+}
 
-        /* SCANNER VIDEO */
-        .video-wrap { position: relative; margin: 0 0 14px; display: none; }
-        .video-wrap video {
-            width: 100%; max-height: 260px; border-radius: 14px;
-            background: #000; display: block;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-        }
-        .scan-corners {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 55%; aspect-ratio: 1;
-            pointer-events: none;
-        }
-        .scan-corners::before, .scan-corners::after,
-        .scan-corners span::before, .scan-corners span::after {
-            content: ''; position: absolute; width: 22px; height: 22px;
-            border-color: #f59e0b; border-style: solid;
-        }
-        .scan-corners::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
-        .scan-corners::after  { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
-        .scan-corners span::before { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
-        .scan-corners span::after  { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+/* ── TOPBAR ── */
+.topbar {
+  height: 52px;
+  flex-shrink: 0;
+  background: rgba(9,13,23,.95);
+  border-bottom: 1px solid var(--b1);
+  display: flex; align-items: center;
+  padding: 0 24px;
+  gap: 0;
+  position: relative;
+  backdrop-filter: blur(20px);
+}
+.topbar-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.1rem;
+  font-style: italic;
+  color: var(--tx2);
+  flex: 1;
+}
+.topbar-title strong {
+  font-style: normal;
+  color: var(--tx);
+  font-family: 'Familjen Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  margin-right: 8px;
+}
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.chip {
+  font-family: 'Fira Code', monospace;
+  font-size: .68rem; letter-spacing: .3px;
+  padding: 4px 10px; border-radius: 6px;
+  border: 1px solid var(--b2);
+  background: var(--s2); color: var(--tx2);
+}
+.chip.live { border-color: rgba(13,207,176,.4); color: var(--teal); background: var(--teal-d); }
+.chip.live::before { content: '● '; font-size: .6rem; }
 
-        /* FIELDS */
-        .field { margin-bottom: 12px; }
-        .field label {
-            font-size: 12px; font-weight: 600; color: var(--gray);
-            display: block; margin-bottom: 5px; text-transform: uppercase; letter-spacing: .4px;
-        }
-        .field input {
-            width: 100%; padding: 13px 16px;
-            border: 1.5px solid var(--border); border-radius: 12px;
-            font-size: 15px; font-family: 'Poppins', sans-serif;
-            background: #fafbff; color: var(--dark);
-            transition: border-color .2s, background .2s; outline: none;
-        }
-        .field input:focus { border-color: var(--primary-light); background: white; }
-        .field input[readonly] { background: #f1f5f9; color: var(--gray); cursor: default; }
+/* ── CONTENT AREA ── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0;
+  position: relative;
+}
+.content::-webkit-scrollbar { width: 4px; }
+.content::-webkit-scrollbar-track { background: var(--bg); }
+.content::-webkit-scrollbar-thumb { background: var(--b1); border-radius: 4px; }
 
-        /* DB MATCH BANNER */
-        .db-match {
-            background: #eff6ff; border: 1.5px solid #bfdbfe;
-            border-radius: 12px; padding: 10px 14px; margin-bottom: 12px;
-            display: none; font-size: 12px; color: #1d4ed8;
-        }
-        .db-match strong { display: block; font-size: 13px; margin-bottom: 2px; }
+/* ── PANELS ── */
+.panel { display: none; height: 100%; }
+.panel.active { display: flex; flex-direction: column; }
 
-        /* BUTTONS */
-        .btn {
-            width: 100%; padding: 15px 20px; border: none; border-radius: 12px;
-            font-size: 15px; font-weight: 600; cursor: pointer;
-            transition: opacity .15s, transform .1s;
-            display: flex; align-items: center; justify-content: center; gap: 8px;
-            margin: 6px 0; font-family: 'Poppins', sans-serif;
-        }
-        .btn:active { transform: scale(.97); opacity: .9; }
-        .btn-scan { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; }
-        .btn-save { background: linear-gradient(135deg, var(--secondary), #059669); color: white; }
-        .btn-sell { background: linear-gradient(135deg, var(--accent), #d97706); color: white; }
-        .btn-danger { background: linear-gradient(135deg, var(--danger), #dc2626); color: white; }
-        .btn-sm { width: auto; padding: 8px 14px; font-size: 13px; margin: 0; }
+/* ══════════════════════════════
+   POS PANEL — SPLIT LAYOUT
+══════════════════════════════ */
+.pos-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: 1fr;
+  height: 100%;
+  overflow: hidden;
+}
+.pos-left {
+  padding: 24px;
+  overflow-y: auto;
+  border-right: 1px solid var(--b1);
+  display: flex; flex-direction: column; gap: 16px;
+}
+.pos-left::-webkit-scrollbar { width: 3px; }
+.pos-left::-webkit-scrollbar-thumb { background: var(--b1); }
+.pos-right {
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
 
-        /* STATS */
-        .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-        .stat-card {
-            background: white; padding: 16px; border-radius: 16px;
-            text-align: center; border: 1px solid var(--border);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .stat-number { font-size: 26px; font-weight: 700; color: var(--secondary); }
-        .stat-label { font-size: 11px; color: var(--gray); margin-top: 2px; }
+/* ── PAGE HEADER ── */
+.pg-hdr {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 4px;
+}
+.pg-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.8rem;
+  line-height: 1;
+  color: var(--tx);
+}
+.pg-title em { color: var(--blue3); font-style: italic; }
+.pg-sub { font-size: .78rem; color: var(--tx3); margin-top: 3px; }
 
-        /* PRODUCT STATUS (venta) */
-        .prod-status {
-            background: #ecfdf5; border: 1px solid #6ee7b7;
-            border-radius: 12px; padding: 12px 16px; margin-bottom: 10px;
-            display: none;
-        }
-        .prod-status.error { background: #fef2f2; border-color: #fca5a5; }
-        .prod-status-name { font-size: 14px; font-weight: 600; color: #065f46; }
-        .prod-status.error .prod-status-name { color: #991b1b; }
-        .prod-status-stock { font-size: 12px; color: #047857; margin-top: 2px; }
-        .prod-status.error .prod-status-stock { color: #b91c1c; }
-        .prod-status-price { font-size: 12px; color: #047857; margin-top: 2px; font-weight: 600; }
+/* ── INPUT ZONE ── */
+.input-zone {
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: 14px;
+  padding: 16px;
+  position: relative;
+  overflow: hidden;
+}
+.input-zone::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, var(--blue), var(--teal), transparent);
+}
+.scan-row { display: flex; gap: 8px; align-items: stretch; }
+.scan-input {
+  flex: 1;
+  background: var(--bg);
+  border: 1px solid var(--b1);
+  border-radius: 10px;
+  color: var(--tx);
+  font-family: 'Fira Code', monospace;
+  font-size: .95rem; letter-spacing: 1px;
+  padding: 11px 16px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.scan-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--glowl); }
+.scan-input::placeholder { color: var(--tx3); font-size: .8rem; letter-spacing: .3px; }
 
-        /* INVENTORY LIST */
-        .inv-list { margin-top: 4px; }
-        .inv-empty { text-align: center; padding: 32px 16px; color: var(--gray); }
-        .inv-empty .icon { font-size: 40px; margin-bottom: 10px; }
-        .inv-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 0; border-bottom: 1px solid var(--border);
-        }
-        .inv-item:last-child { border-bottom: none; }
-        .inv-emoji {
-            width: 42px; height: 42px; border-radius: 12px;
-            background: #ecfdf5; display: flex; align-items: center;
-            justify-content: center; font-size: 20px; flex-shrink: 0;
-        }
-        .inv-info { flex: 1; min-width: 0; }
-        .inv-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .inv-code { font-size: 10px; color: var(--gray); font-family: monospace; margin-top: 1px; }
-        .inv-right { text-align: right; flex-shrink: 0; }
-        .inv-units { font-size: 16px; font-weight: 700; color: var(--secondary); }
-        .inv-boxes { font-size: 10px; color: var(--gray); margin-top: 1px; }
+/* ── QUICK ACCESS ── */
+.quick-section { }
+.qs-label {
+  font-family: 'Fira Code', monospace;
+  font-size: .65rem; color: var(--tx3);
+  text-transform: uppercase; letter-spacing: .8px;
+  margin-bottom: 8px;
+}
+.quick-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+.qpill {
+  padding: 5px 12px;
+  background: var(--bg);
+  border: 1px solid var(--b1);
+  border-radius: 99px;
+  font-size: .75rem; color: var(--tx2);
+  cursor: pointer; transition: all .15s;
+  font-family: 'Familjen Grotesk', sans-serif;
+  font-weight: 500;
+}
+.qpill:hover { border-color: var(--blue3); color: var(--blue3); background: var(--glowl); }
 
-        /* DASHBOARD */
-        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-        .dash-card {
-            background: white; padding: 16px; border-radius: 16px;
-            text-align: center; border: 1px solid var(--border);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        }
-        .dash-number { font-size: 22px; font-weight: 700; }
-        .dash-label { font-size: 10px; color: var(--gray); margin-top: 2px; }
-        .dash-ventas { color: var(--primary-light); }
-        .dash-ganancia { color: var(--secondary); }
+/* ── LAST ADDED ── */
+.last-added {
+  background: linear-gradient(135deg, rgba(13,207,176,.06), rgba(29,111,235,.06));
+  border: 1px solid rgba(13,207,176,.2);
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 12px;
+  animation: slideDown .2s ease;
+}
+@keyframes slideDown { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+.la-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--teal); flex-shrink: 0; box-shadow: 0 0 8px var(--teal); }
+.la-info { flex: 1; min-width: 0; }
+.la-name { font-weight: 600; font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.la-meta { font-size: .72rem; color: var(--tx2); margin-top: 2px; }
+.la-price { font-family: 'Fira Code', monospace; color: var(--teal); font-size: 1rem; font-weight: 500; }
 
-        /* HISTORIAL */
-        .hist-item {
-            padding: 10px 0; border-bottom: 1px solid var(--border);
-            font-size: 12px; color: var(--dark);
-        }
-        .hist-item:last-child { border-bottom: none; }
-        .hist-name { font-weight: 600; font-size: 13px; }
-        .hist-meta { color: var(--gray); margin-top: 2px; }
-        .hist-totals { display: flex; gap: 12px; margin-top: 4px; }
-        .hist-total-v { color: var(--primary-light); font-weight: 600; }
-        .hist-total-g { color: var(--secondary); font-weight: 600; }
+/* ══ CARRITO PANEL ══ */
+.cart-panel {
+  display: flex; flex-direction: column;
+  height: 100%;
+}
+.cart-topbar {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--b1);
+  flex-shrink: 0;
+}
+.cart-topbar-row { display: flex; align-items: center; justify-content: space-between; }
+.cart-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.2rem; color: var(--tx);
+  display: flex; align-items: center; gap: 8px;
+}
+.cart-count {
+  font-family: 'Fira Code', monospace;
+  font-size: .7rem; font-weight: 500;
+  background: var(--blue); color: #fff;
+  padding: 2px 7px; border-radius: 99px;
+  min-width: 22px; text-align: center;
+}
+.cart-items {
+  flex: 1; overflow-y: auto; padding: 10px 20px;
+}
+.cart-items::-webkit-scrollbar { width: 3px; }
+.cart-items::-webkit-scrollbar-thumb { background: var(--b1); }
+.cart-empty-state {
+  height: 100%; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  color: var(--tx3); gap: 8px;
+}
+.cart-empty-state .e-icon { font-size: 2.2rem; opacity: .3; }
+.cart-empty-state .e-text { font-size: .82rem; }
 
-        /* CALC */
-        .calc-result {
-            background: linear-gradient(135deg, var(--primary), var(--primary-light));
-            border-radius: 16px; padding: 22px; color: white;
-            text-align: center; margin-top: 16px; display: none;
-        }
-        .calc-result .label { font-size: 11px; opacity: .75; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
-        .calc-result .price { font-size: 32px; font-weight: 700; margin-bottom: 16px; }
-        .calc-mini { display: flex; justify-content: space-around; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.2); }
-        .calc-mini-item .lbl { font-size: 10px; opacity: .7; }
-        .calc-mini-item .num { font-size: 14px; font-weight: 600; margin-top: 2px; }
+/* ── CART ITEM ── */
+.ci {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(26,45,74,.6);
+  animation: ciIn .15s ease;
+}
+@keyframes ciIn { from { opacity: 0; transform: translateX(8px); } to { opacity: 1; transform: none; } }
+.ci:last-child { border-bottom: none; }
+.ci-num {
+  font-family: 'Fira Code', monospace;
+  font-size: .65rem; color: var(--tx3);
+  width: 18px; flex-shrink: 0; text-align: right;
+}
+.ci-body { flex: 1; min-width: 0; }
+.ci-name { font-size: .86rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ci-cat { font-size: .68rem; color: var(--tx3); margin-top: 1px; }
+.ci-price { font-family: 'Fira Code', monospace; font-size: .88rem; color: var(--blue3); flex-shrink: 0; }
+.ci-rm {
+  background: none; border: none; color: var(--tx3);
+  cursor: pointer; font-size: .85rem; padding: 3px 5px;
+  border-radius: 5px; transition: all .15s; flex-shrink: 0;
+}
+.ci-rm:hover { background: var(--rose-d); color: var(--rose); }
 
-        /* NAV */
-        .nav {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: white; display: flex;
-            box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
-            border-top: 1px solid var(--border); z-index: 1000;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        .nav-btn {
-            flex: 1; padding: 12px 8px 10px; border: none;
-            background: none; color: var(--gray); font-size: 11px;
-            font-weight: 500; font-family: 'Poppins', sans-serif;
-            display: flex; flex-direction: column; align-items: center;
-            gap: 4px; cursor: pointer; transition: color .2s; position: relative;
-        }
-        .nav-btn .icon { font-size: 22px; }
-        .nav-btn.active { color: var(--secondary); }
-        .nav-btn.active::before {
-            content: ''; position: absolute; top: 0; left: 20%; right: 20%;
-            height: 3px; background: var(--secondary); border-radius: 0 0 4px 4px;
-        }
-    </style>
+/* ── TOTALES ── */
+.totales-panel {
+  border-top: 1px solid var(--b1);
+  padding: 14px 20px;
+  flex-shrink: 0;
+  background: var(--s1);
+}
+.tot-row {
+  display: flex; justify-content: space-between;
+  font-size: .8rem; color: var(--tx2); padding: 3px 0;
+}
+.tot-row .tv { font-family: 'Fira Code', monospace; }
+.tot-grand {
+  display: flex; justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0 6px; margin-top: 6px;
+  border-top: 1px solid var(--b2);
+}
+.tot-grand .tg-label { font-size: .72rem; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--tx2); }
+.tot-grand .tg-val {
+  font-family: 'Instrument Serif', serif;
+  font-size: 1.7rem; color: var(--blue3);
+  line-height: 1;
+}
+.gan-row {
+  display: flex; justify-content: space-between;
+  font-size: .78rem; color: var(--lime);
+  padding: 3px 0; font-weight: 600;
+}
+.gan-row .tv { font-family: 'Fira Code', monospace; }
+
+/* ── METODO PAGO ── */
+.mp-section { padding: 12px 20px 10px; border-top: 1px solid var(--b1); flex-shrink: 0; }
+.mp-label { font-family: 'Fira Code', monospace; font-size: .62rem; color: var(--tx3); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 8px; }
+.mp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.mp-btn {
+  padding: 7px 4px;
+  background: var(--s2); border: 1px solid var(--b1);
+  border-radius: 8px;
+  font-family: 'Familjen Grotesk', sans-serif;
+  font-size: .75rem; font-weight: 600;
+  color: var(--tx2); cursor: pointer;
+  transition: all .15s; text-align: center;
+}
+.mp-btn:hover { border-color: var(--b2); color: var(--tx); }
+.mp-btn.on { background: var(--glowl); border-color: var(--blue); color: var(--blue3); }
+
+/* ── ACTION BUTTONS ── */
+.action-btns { padding: 10px 20px 16px; flex-shrink: 0; display: flex; flex-direction: column; gap: 7px; }
+
+/* ══════════════════════════════
+   GENERIC FULL PANEL
+══════════════════════════════ */
+.full-panel { padding: 28px 32px; overflow-y: auto; flex: 1; }
+.full-panel::-webkit-scrollbar { width: 4px; }
+.full-panel::-webkit-scrollbar-thumb { background: var(--b1); border-radius: 4px; }
+
+/* ── SECTION HEADER ── */
+.sec-hdr {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 22px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--b1);
+}
+.sec-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 2rem; line-height: 1;
+  color: var(--tx);
+}
+.sec-title em { color: var(--blue3); font-style: italic; }
+.sec-sub { font-size: .78rem; color: var(--tx3); margin-top: 5px; font-family: 'Fira Code', monospace; }
+
+/* ── SEARCH BAR ── */
+.searchbar {
+  display: flex; gap: 10px; align-items: center;
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: 10px;
+  padding: 8px 14px;
+  margin-bottom: 18px;
+}
+.searchbar-icon { color: var(--tx3); font-size: .9rem; flex-shrink: 0; }
+.searchbar input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--tx); font-family: 'Familjen Grotesk', sans-serif;
+  font-size: .88rem;
+}
+.searchbar input::placeholder { color: var(--tx3); }
+.searchbar select {
+  background: var(--s2); border: 1px solid var(--b1);
+  color: var(--tx2); border-radius: 6px;
+  font-family: 'Familjen Grotesk', sans-serif; font-size: .8rem;
+  padding: 4px 8px; outline: none; cursor: pointer;
+}
+.searchbar select:focus { border-color: var(--blue); }
+
+/* ── PRODUCT GRID ── */
+.prod-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+
+/* ── PRODUCT CARD ── */
+.pcard {
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: 14px;
+  padding: 0;
+  overflow: hidden;
+  transition: border-color .2s, transform .15s;
+  cursor: default;
+}
+.pcard:hover { border-color: var(--b2); transform: translateY(-1px); }
+.pcard-head {
+  padding: 14px 14px 10px;
+  background: linear-gradient(135deg, var(--s2), var(--s1));
+  border-bottom: 1px solid var(--b1);
+  position: relative;
+}
+.pcard-type {
+  position: absolute; top: 10px; right: 10px;
+  font-family: 'Fira Code', monospace;
+  font-size: .58rem; font-weight: 500;
+  padding: 2px 7px; border-radius: 4px;
+}
+.pcard-type.art { background: var(--amber-d); color: var(--amber); border: 1px solid rgba(245,166,35,.2); }
+.pcard-type.ind { background: var(--violet-d); color: var(--violet); border: 1px solid rgba(155,123,255,.2); }
+.pcard-name { font-weight: 700; font-size: .92rem; color: var(--tx); padding-right: 40px; }
+.pcard-cat { font-size: .7rem; color: var(--tx3); margin-top: 3px; font-family: 'Fira Code', monospace; }
+.pcard-body { padding: 10px 14px 12px; }
+.pcard-prices { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+.price-tag {
+  font-family: 'Fira Code', monospace; font-size: .72rem;
+  padding: 3px 8px; border-radius: 5px;
+}
+.price-tag.venta { background: var(--glowl); color: var(--blue3); border: 1px solid rgba(46,127,255,.2); }
+.price-tag.compra { background: var(--amber-d); color: var(--amber); border: 1px solid rgba(245,166,35,.2); }
+.price-tag.stock-ok { background: var(--lime-d); color: var(--lime); border: 1px solid rgba(86,211,100,.2); }
+.price-tag.stock-no { background: var(--rose-d); color: var(--rose); border: 1px solid rgba(240,75,107,.2); }
+.pcard-bar { height: 3px; background: var(--s3); border-radius: 99px; overflow: hidden; margin: 8px 0 10px; }
+.pcard-bar-fill { height: 100%; border-radius: 99px; transition: width .5s; }
+.pcard-actions { display: flex; gap: 5px; }
+.pcard-code { font-family: 'Fira Code', monospace; font-size: .6rem; color: var(--tx3); margin-top: 6px; }
+
+/* ── HISTORIAL ── */
+.hist-list { display: flex; flex-direction: column; gap: 8px; }
+.hist-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.hist-item:hover { border-color: var(--b2); background: var(--s2); }
+.hist-num {
+  font-family: 'Fira Code', monospace;
+  font-size: .65rem; color: var(--tx3);
+  width: 28px; text-align: right;
+}
+.hist-info {}
+.hist-date { font-weight: 600; font-size: .86rem; }
+.hist-meta { font-size: .7rem; color: var(--tx3); margin-top: 2px; font-family: 'Fira Code', monospace; }
+.hist-method {
+  font-family: 'Fira Code', monospace;
+  font-size: .68rem; padding: 3px 9px; border-radius: 5px;
+  background: var(--s2); color: var(--tx2); border: 1px solid var(--b1);
+}
+.hist-amount { text-align: right; }
+.hist-total { font-family: 'Fira Code', monospace; font-size: .95rem; color: var(--blue3); font-weight: 500; }
+.hist-gan { font-size: .68rem; color: var(--lime); margin-top: 1px; }
+
+/* ── COSTOS LAYOUT ── */
+.costos-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+.costos-config { position: sticky; top: 0; }
+
+/* ── CONFIG BLOCK ── */
+.cfg-block {
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.cfg-head {
+  padding: 14px 16px;
+  background: linear-gradient(135deg, var(--s2), var(--s1));
+  border-bottom: 1px solid var(--b1);
+  font-family: 'Fira Code', monospace;
+  font-size: .68rem; font-weight: 500;
+  color: var(--tx2); text-transform: uppercase; letter-spacing: .8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.cfg-fields { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+.cfg-field {}
+.cfg-lbl { font-family: 'Fira Code', monospace; font-size: .62rem; color: var(--tx3); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
+.cfg-inp {
+  width: 100%;
+  background: var(--bg);
+  border: 1px solid var(--b1);
+  border-radius: 8px;
+  color: var(--tx);
+  font-family: 'Fira Code', monospace; font-size: .88rem;
+  padding: 8px 12px; outline: none;
+  transition: border-color .2s;
+}
+.cfg-inp:focus { border-color: var(--blue); }
+.cfg-date { width: 100%; background: var(--bg); border: 1px solid var(--b1); border-radius: 8px; color: var(--tx); font-family: 'Fira Code', monospace; font-size: .82rem; padding: 8px 12px; outline: none; transition: border-color .2s; }
+.cfg-date:focus { border-color: var(--blue); }
+
+/* ── FORMULA CARDS ── */
+.formula-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.fcrd {
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.fcrd-head {
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--b1);
+  display: flex; align-items: center; gap: 10px;
+}
+.fcrd-icon { font-size: 1.1rem; }
+.fcrd-title {
+  font-family: 'Fira Code', monospace;
+  font-size: .72rem; font-weight: 500;
+  color: var(--tx2); text-transform: uppercase; letter-spacing: .5px;
+}
+.fcrd-body { padding: 12px 14px; }
+.frow {
+  display: flex; justify-content: space-between;
+  font-size: .78rem; padding: 4px 0;
+  border-bottom: 1px solid rgba(26,45,74,.4);
+}
+.frow:last-child { border-bottom: none; }
+.frow .fl { color: var(--tx2); }
+.frow .fv { font-family: 'Fira Code', monospace; font-weight: 500; }
+.fcrd-total {
+  padding: 10px 14px;
+  background: var(--s2);
+  border-top: 1px solid var(--b1);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.fcrd-total .ft-lbl { font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--tx2); font-family: 'Fira Code', monospace; }
+.fcrd-total .ft-val { font-family: 'Instrument Serif', serif; font-size: 1.3rem; line-height: 1; }
+
+/* ── CRT BOX ── */
+.crt-box {
+  background: linear-gradient(135deg, rgba(29,111,235,.08), rgba(13,207,176,.05));
+  border: 1px solid rgba(13,207,176,.25);
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin-bottom: 14px;
+}
+.crt-label { font-family: 'Fira Code', monospace; font-size: .65rem; color: var(--teal); text-transform: uppercase; letter-spacing: .8px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.crt-eq { font-family: 'Fira Code', monospace; font-size: .78rem; color: var(--tx3); margin-bottom: 12px; padding: 8px 12px; background: rgba(0,0,0,.3); border-radius: 7px; }
+.crt-items { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+.crt-item { background: var(--s2); border: 1px solid var(--b1); border-radius: 8px; padding: 10px 12px; }
+.crt-item-lbl { font-size: .65rem; font-family: 'Fira Code', monospace; color: var(--tx3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.crt-item-val { font-family: 'Instrument Serif', serif; font-size: 1.2rem; color: var(--tx); }
+.crt-result { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid rgba(13,207,176,.2); }
+.crt-result .cr-lbl { font-size: .8rem; font-weight: 700; color: var(--teal); font-family: 'Fira Code', monospace; }
+.crt-result .cr-val { font-family: 'Instrument Serif', serif; font-size: 2rem; color: var(--teal); }
+
+/* ── PE BOX ── */
+.pe-box {
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.pe-head {
+  padding: 14px 18px;
+  background: linear-gradient(135deg, var(--s2), var(--s1));
+  border-bottom: 1px solid var(--b1);
+  display: flex; align-items: center; gap: 10px;
+}
+.pe-head-title { font-family: 'Instrument Serif', serif; font-size: 1.1rem; color: var(--tx); }
+.pe-body { padding: 18px; }
+.pe-eq { font-family: 'Fira Code', monospace; font-size: .72rem; color: var(--tx3); padding: 8px 12px; background: rgba(0,0,0,.3); border-radius: 7px; margin-bottom: 16px; line-height: 1.7; }
+.pe-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.pe-meta-item { }
+.pe-meta-lbl { font-family: 'Fira Code', monospace; font-size: .62rem; color: var(--tx3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 4px; }
+.pe-meta-val { font-family: 'Instrument Serif', serif; font-size: 1.3rem; color: var(--tx); }
+.pe-number { font-family: 'Instrument Serif', serif; font-size: 3rem; line-height: 1; color: var(--teal); margin: 10px 0 4px; text-shadow: 0 0 30px rgba(13,207,176,.3); }
+.pe-desc { font-size: .78rem; color: var(--tx2); margin-bottom: 14px; }
+.pe-progress { height: 6px; background: var(--s3); border-radius: 99px; overflow: hidden; margin-bottom: 8px; }
+.pe-prog-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--teal)); transition: width .7s ease; }
+.pe-status { font-size: .78rem; display: flex; justify-content: space-between; align-items: center; }
+
+/* ── CIF ART ── */
+.cif-art-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 12px; }
+.cif-art-card {
+  background: var(--s2);
+  border: 1px solid var(--b1);
+  border-radius: 10px;
+  padding: 12px 14px;
+}
+.cif-art-name { font-weight: 700; font-size: .86rem; margin-bottom: 8px; }
+.cif-art-row { display: flex; justify-content: space-between; font-size: .75rem; padding: 3px 0; border-bottom: 1px solid rgba(26,45,74,.4); }
+.cif-art-row:last-child { border-bottom: none; }
+.cif-art-row .rl { color: var(--tx2); }
+.cif-art-row .rv { font-family: 'Fira Code', monospace; }
+
+/* ── STATS LAYOUT ── */
+.stats-layout { display: grid; grid-template-columns: 260px 1fr; gap: 20px; align-items: start; }
+.stat-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+.sc {
+  background: var(--s1);
+  border: 1px solid var(--b1);
+  border-radius: 12px;
+  padding: 14px;
+  position: relative; overflow: hidden;
+}
+.sc::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: linear-gradient(90deg, var(--blue), var(--teal)); }
+.sc-lbl { font-family: 'Fira Code', monospace; font-size: .62rem; text-transform: uppercase; letter-spacing: .5px; color: var(--tx3); margin-bottom: 6px; }
+.sc-val { font-family: 'Instrument Serif', serif; font-size: 1.6rem; line-height: 1; }
+.sc-val.teal { color: var(--teal); }
+.sc-val.blue { color: var(--blue3); }
+.sc-val.amber { color: var(--amber); }
+.sc-val.lime { color: var(--lime); }
+
+/* ── CALENDARIO ── */
+.cal-block { background: var(--s1); border: 1px solid var(--b1); border-radius: 14px; overflow: hidden; }
+.cal-hdr { padding: 12px 14px; border-bottom: 1px solid var(--b1); display: flex; align-items: center; justify-content: space-between; }
+.cal-hdr-title { font-family: 'Fira Code', monospace; font-size: .75rem; font-weight: 500; text-transform: capitalize; }
+.cal-nav { background: var(--s2); border: 1px solid var(--b1); color: var(--tx2); cursor: pointer; width: 22px; height: 22px; border-radius: 5px; display: flex; align-items: center; justify-content: center; font-size: .75rem; transition: all .15s; }
+.cal-nav:hover { border-color: var(--blue); color: var(--blue3); }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); padding: 10px 12px; gap: 2px; }
+.cdn { text-align: center; font-family: 'Fira Code', monospace; font-size: .58rem; color: var(--tx3); padding: 3px 0; }
+.cd { text-align: center; font-size: .75rem; padding: 5px 2px; cursor: pointer; border-radius: 5px; transition: background .15s; color: var(--tx2); }
+.cd:hover { background: var(--s3); }
+.cd.today { color: var(--blue3); font-weight: 700; }
+.cd.sel { background: var(--blue) !important; color: #fff; font-weight: 700; box-shadow: 0 0 8px var(--glow); }
+.cd.emp { cursor: default; }
+.cal-foot { padding: 8px 14px 12px; font-family: 'Fira Code', monospace; font-size: .62rem; color: var(--tx3); }
+
+/* ── TOP LIST ── */
+.top-list { }
+.top-item {
+  display: grid; grid-template-columns: 24px 1fr auto;
+  align-items: center; gap: 10px;
+  padding: 9px 0; border-bottom: 1px solid rgba(26,45,74,.4);
+}
+.top-item:last-child { border-bottom: none; }
+.top-n { font-family: 'Instrument Serif', serif; font-size: 1.1rem; color: var(--tx3); line-height: 1; }
+.top-info .ti-name { font-weight: 600; font-size: .86rem; }
+.top-info .ti-cat { font-size: .68rem; color: var(--tx3); font-family: 'Fira Code', monospace; margin-top: 1px; }
+
+/* ── MODAL ── */
+.moverlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(3,6,12,.85);
+  backdrop-filter: blur(12px);
+  z-index: 500; align-items: center; justify-content: center;
+}
+.moverlay.open { display: flex; }
+.modal {
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-radius: 16px;
+  padding: 0;
+  width: 100%; max-width: 520px;
+  max-height: 92vh; overflow-y: auto;
+  box-shadow: 0 24px 60px rgba(0,0,0,.6), 0 0 60px rgba(29,111,235,.12);
+  animation: mIn .22s cubic-bezier(.34,1.5,.64,1);
+}
+.modal::-webkit-scrollbar { width: 3px; }
+.modal::-webkit-scrollbar-thumb { background: var(--b1); }
+@keyframes mIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+.mhdr {
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid var(--b1);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: var(--s1); z-index: 2;
+}
+.mtitle { font-family: 'Instrument Serif', serif; font-size: 1.3rem; color: var(--tx); }
+.mclose {
+  background: var(--s2); border: 1px solid var(--b1);
+  color: var(--tx2); cursor: pointer;
+  width: 28px; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .82rem; transition: all .15s;
+}
+.mclose:hover { background: var(--rose-d); border-color: var(--rose); color: var(--rose); }
+.mbody { padding: 20px 22px; }
+
+/* ── FORM ── */
+.fld { margin-bottom: 12px; }
+.lbl { font-family: 'Fira Code', monospace; font-size: .62rem; text-transform: uppercase; letter-spacing: .5px; color: var(--tx2); margin-bottom: 5px; display: block; }
+.inp, .sel {
+  width: 100%;
+  background: var(--s2); border: 1px solid var(--b1);
+  border-radius: 8px; color: var(--tx);
+  font-family: 'Familjen Grotesk', sans-serif; font-size: .88rem;
+  padding: 9px 13px; outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+.inp:focus, .sel:focus { border-color: var(--blue); box-shadow: 0 0 0 3px var(--glowl); }
+.inp::placeholder { color: var(--tx3); }
+.sel { appearance: none; cursor: pointer; }
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 18px; border-radius: 8px; border: none;
+  font-family: 'Familjen Grotesk', sans-serif; font-weight: 700;
+  font-size: .86rem; cursor: pointer; transition: all .15s;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: .3; cursor: not-allowed; }
+.btn-p { background: linear-gradient(135deg, var(--blue), var(--blue2)); color: #fff; box-shadow: 0 0 16px var(--glow); }
+.btn-p:hover:not(:disabled) { box-shadow: 0 0 26px var(--glow); filter: brightness(1.08); }
+.btn-teal { background: var(--teal); color: #06090f; font-weight: 700; }
+.btn-teal:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-ghost { background: var(--s2); border: 1px solid var(--b1); color: var(--tx); }
+.btn-ghost:hover:not(:disabled) { border-color: var(--b2); background: var(--s3); }
+.btn-danger { background: var(--rose); color: #fff; }
+.btn-danger:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-outline { background: transparent; border: 1px solid var(--b2); color: var(--tx2); }
+.btn-outline:hover:not(:disabled) { border-color: var(--blue3); color: var(--blue3); }
+.btn-amber { background: var(--amber); color: #06090f; font-weight: 700; }
+.btn-full { width: 100%; }
+.btn-lg { padding: 12px 22px; font-size: .92rem; border-radius: 10px; }
+.btn-sm { padding: 5px 10px; font-size: .75rem; border-radius: 6px; }
+
+/* ── BADGE ── */
+.bx { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 5px; font-family: 'Fira Code', monospace; font-size: .64rem; }
+.bx-blue { background: var(--glowl); color: var(--blue3); border: 1px solid rgba(46,127,255,.2); }
+.bx-teal { background: var(--teal-d); color: var(--teal); border: 1px solid rgba(13,207,176,.2); }
+.bx-amber { background: var(--amber-d); color: var(--amber); border: 1px solid rgba(245,166,35,.2); }
+.bx-rose { background: var(--rose-d); color: var(--rose); border: 1px solid rgba(240,75,107,.2); }
+.bx-lime { background: var(--lime-d); color: var(--lime); border: 1px solid rgba(86,211,100,.2); }
+.bx-violet { background: var(--violet-d); color: var(--violet); border: 1px solid rgba(155,123,255,.2); }
+
+/* ── ALERT ── */
+.alt { padding: 9px 13px; border-radius: 8px; font-size: .8rem; margin-bottom: 10px; }
+.alt-ok { background: var(--lime-d); border: 1px solid rgba(86,211,100,.25); color: var(--lime); }
+.alt-warn { background: var(--amber-d); border: 1px solid rgba(245,166,35,.25); color: var(--amber); }
+.alt-err { background: var(--rose-d); border: 1px solid rgba(240,75,107,.25); color: var(--rose); }
+.alt-info { background: var(--glowl); border: 1px solid rgba(46,127,255,.25); color: var(--blue3); }
+
+/* ── INSUMO ROW ── */
+.irow { display: flex; justify-content: space-between; align-items: center; padding: 7px 10px; background: var(--s2); border: 1px solid var(--b1); border-radius: 7px; margin-bottom: 5px; font-size: .8rem; }
+
+/* ── DETAIL ROW ── */
+.dr { display: flex; justify-content: space-between; padding: 7px 0; font-size: .8rem; border-bottom: 1px solid rgba(26,45,74,.4); }
+.dr:last-child { border-bottom: none; }
+.dr .dl { color: var(--tx2); }
+.dr .dv { font-family: 'Fira Code', monospace; font-weight: 500; }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed; bottom: 22px; right: 22px;
+  transform: translateX(120%);
+  background: var(--s1);
+  border: 1px solid var(--b2);
+  border-left: 3px solid var(--teal);
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-family: 'Fira Code', monospace; font-size: .75rem;
+  z-index: 9999;
+  transition: transform .3s cubic-bezier(.34,1.5,.64,1);
+  max-width: 320px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5), 0 0 20px rgba(13,207,176,.15);
+  pointer-events: none;
+}
+#toast.show { transform: translateX(0); }
+
+/* ── EMPTY STATE ── */
+.empty { text-align: center; padding: 50px 20px; color: var(--tx3); }
+.empty .ei { font-size: 2.5rem; margin-bottom: 10px; opacity: .3; }
+.empty .et { font-family: 'Familjen Grotesk', sans-serif; font-weight: 700; font-size: .95rem; }
+
+/* UTILS */
+.flex { display: flex; }
+.fb { display: flex; justify-content: space-between; align-items: center; }
+.hr { border: none; border-top: 1px solid var(--b1); margin: 14px 0; }
+.mt8 { margin-top: 8px; }
+.mt12 { margin-top: 12px; }
+.mt16 { margin-top: 16px; }
+.mb12 { margin-bottom: 12px; }
+.mb16 { margin-bottom: 16px; }
+.mono { font-family: 'Fira Code', monospace; }
+.serif { font-family: 'Instrument Serif', serif; }
+.c-teal { color: var(--teal); }
+.c-blue { color: var(--blue3); }
+.c-amber { color: var(--amber); }
+.c-lime { color: var(--lime); }
+.c-rose { color: var(--rose); }
+.c-gray { color: var(--tx2); }
+.c-dim { color: var(--tx3); }
+.sm { font-size: .8rem; }
+.xs { font-size: .7rem; }
+.bold { font-weight: 700; }
+.semi { font-weight: 600; }
+
+@media print {
+  .sidebar, .topbar, .btn { display: none !important; }
+  #tprint { display: block !important; color: #000 !important; background: #fff !important; }
+}
+</style>
 </head>
 <body>
 
-<header><h1>🛒 Pro Scan Tienda</h1></header>
-<div class="toast" id="toast"></div>
+<!-- ══ SIDEBAR ══ -->
+<aside class="sidebar">
+  <div class="sb-logo">AT</div>
+  <nav class="sb-nav">
+    <button class="sb-btn active" onclick="tab('pos',this)" title="Punto de Venta">
+      <span class="sb-icon">⚡</span>
+      <span class="sb-lbl">Venta</span>
+    </button>
+    <button class="sb-btn" onclick="tab('inv',this)" title="Inventario">
+      <span class="sb-icon">📦</span>
+      <span class="sb-lbl">Stock</span>
+    </button>
+    <button class="sb-btn" onclick="tab('art',this)" title="Artesanales">
+      <span class="sb-icon">🍨</span>
+      <span class="sb-lbl">Arte.</span>
+    </button>
+    <button class="sb-btn" onclick="tab('hist',this)" title="Historial">
+      <span class="sb-icon">📋</span>
+      <span class="sb-lbl">Hist.</span>
+    </button>
+    <button class="sb-btn" onclick="tab('costos',this)" title="Costos & PE">
+      <span class="sb-icon">🧮</span>
+      <span class="sb-lbl">Costos</span>
+    </button>
+    <button class="sb-btn" onclick="tab('stats',this)" title="Estadísticas">
+      <span class="sb-icon">📊</span>
+      <span class="sb-lbl">Stats</span>
+    </button>
+  </nav>
+  <div class="sb-bottom">
+    <div class="sb-clock" id="reloj">--:--<br>--</div>
+  </div>
+</aside>
 
-<div class="container">
+<!-- ══ MAIN SHELL ══ -->
+<div class="shell">
+  <div class="topbar">
+    <div class="topbar-title"><strong>AbarroTech</strong> <span id="tabLabel">Punto de Venta</span></div>
+    <div class="topbar-right">
+      <span class="chip">IVA 16% · MXN</span>
+      <span class="chip live" id="topStatus">sistema activo</span>
+    </div>
+  </div>
 
-    <!-- INVENTARIO -->
-    <section id="sec-inv" class="active">
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-number" id="total-prods">0</div>
-                <div class="stat-label">Productos</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="total-units">0</div>
-                <div class="stat-label">Unidades totales</div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-title">Registrar compra</div>
-            <button class="btn btn-scan" onclick="encenderCamara('in')">📷 Escanear código</button>
-            <div class="video-wrap" id="wrap-in"><video id="video-in" playsinline></video><div class="scan-corners"><span></span></div></div>
-            <div class="field"><label>Código de barras</label><input type="text" id="in-cod" placeholder="Escanea o escribe el código" oninput="autocompletarDB()"></div>
-            <div class="db-match" id="db-match"><strong id="db-match-nom">-</strong><span id="db-match-info">-</span></div>
-            <div class="field"><label>Nombre del producto</label><input type="text" id="in-nom" placeholder="Ej: Gaseosa 500ml"></div>
-            <div class="field"><label>Costo por caja (S/)</label><input type="number" id="in-costo" placeholder="0.00" step="0.01" inputmode="decimal"></div>
-            <div class="field"><label>Número de cajas compradas</label><input type="number" id="in-cajas" placeholder="1" inputmode="numeric"></div>
-            <div class="field"><label>Unidades por caja</label><input type="number" id="in-uxc" placeholder="12" inputmode="numeric"></div>
-            <button class="btn btn-save" onclick="guardar()">💾 Guardar en inventario</button>
-        </div>
-        <div class="card">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-                <div class="card-title" style="margin:0">Inventario actual</div>
-                <button class="btn btn-danger btn-sm" onclick="limpiarTodo()">🗑️ Limpiar</button>
-            </div>
-            <div class="inv-list" id="lista">
-                <div class="inv-empty"><div class="icon">📦</div><p>Sin productos aún.<br>Registra tu primera compra.</p></div>
-            </div>
-        </div>
-    </section>
+  <div class="content">
 
-    <!-- VENTAS -->
-    <section id="sec-ven">
-        <div class="card">
-            <div class="card-title">Registrar venta</div>
-            <button class="btn btn-scan" onclick="encenderCamara('out')">📷 Escanear para vender</button>
-            <div class="video-wrap" id="wrap-out"><video id="video-out" playsinline></video><div class="scan-corners"><span></span></div></div>
-            <div class="field"><label>Código del producto</label><input type="text" id="v-cod" placeholder="Escanea o escribe el código" oninput="buscarProducto()"></div>
-            <div class="prod-status" id="prod-status">
-                <div class="prod-status-name" id="prod-nombre">-</div>
-                <div class="prod-status-stock" id="prod-stock">-</div>
-                <div class="prod-status-price" id="prod-precio"></div>
-            </div>
-            <div class="field"><label>Cantidad de unidades a vender</label><input type="number" id="v-cant" placeholder="1" inputmode="numeric"></div>
-            <button class="btn btn-sell" onclick="vender()">💰 Confirmar venta</button>
-        </div>
-    </section>
+    <!-- ══════ POS ══════ -->
+    <div class="panel active" id="tab-pos">
+      <div class="pos-layout">
 
-    <!-- DASHBOARD -->
-    <section id="sec-dash">
-        <div class="dash-grid">
-            <div class="dash-card">
-                <div class="dash-number dash-ventas" id="dash-total">$0.00</div>
-                <div class="dash-label">Total ventas</div>
+        <!-- LEFT -->
+        <div class="pos-left">
+          <div class="pg-hdr">
+            <div>
+              <div class="pg-title">Punto de <em>Venta</em></div>
+              <div class="pg-sub">Escanea o escribe un código · Enter para agregar</div>
             </div>
-            <div class="dash-card">
-                <div class="dash-number dash-ganancia" id="dash-ganancia">$0.00</div>
-                <div class="dash-label">Ganancia</div>
-            </div>
-        </div>
-        <div class="card">
-            <div class="card-title">Resumen del día</div>
-            <button class="btn btn-save" onclick="corteCaja()">🧾 Corte de caja</button>
-            <div id="hist-lista" style="margin-top:14px">
-                <div class="inv-empty"><div class="icon">📊</div><p>Sin ventas registradas aún.</p></div>
-            </div>
-        </div>
-        <div class="card">
-            <button class="btn btn-danger" onclick="limpiarVentas()">🗑️ Limpiar historial de ventas</button>
-        </div>
-    </section>
+          </div>
 
-    <!-- CALCULADORA -->
-    <section id="sec-cal">
-        <div class="card">
-            <div class="card-title">Calculadora de precio sugerido</div>
-            <div class="field"><label>Sueldo mensual del vendedor (S/)</label><input type="number" id="c-sueldo" placeholder="0.00" step="0.01" oninput="recalculo()" inputmode="decimal"></div>
-            <div class="field"><label>Gastos fijos al mes (luz, alquiler…)</label><input type="number" id="c-fijos" placeholder="0.00" step="0.01" oninput="recalculo()" inputmode="decimal"></div>
-            <div class="field"><label>Costo de compra por unidad (S/)</label><input type="number" id="c-costo" placeholder="0.00" step="0.01" oninput="recalculo()" inputmode="decimal"></div>
-            <div class="field"><label>Ventas esperadas al mes (unidades)</label><input type="number" id="c-meta" placeholder="0" oninput="recalculo()" inputmode="numeric"></div>
-            <div class="calc-result" id="calc-result">
-                <div class="label">Precio sugerido de venta (30% ganancia)</div>
-                <div class="price" id="r-sugerido">S/ 0.00</div>
-                <div class="calc-mini">
-                    <div class="calc-mini-item"><div class="lbl">Costo real/u</div><div class="num" id="r-costo">S/ 0.00</div></div>
-                    <div class="calc-mini-item"><div class="lbl">Ganancia</div><div class="num">30%</div></div>
-                    <div class="calc-mini-item"><div class="lbl">Gasto/u</div><div class="num" id="r-gasto">S/ 0.00</div></div>
+          <div class="input-zone">
+            <div class="scan-row">
+              <input class="scan-input" id="codigoInput" placeholder="Código de barras o nombre del producto..."
+                onkeydown="if(event.key==='Enter')addCodigo()">
+              <button class="btn btn-p" onclick="addCodigo()">Agregar</button>
+              <button class="btn btn-outline" onclick="openSim()" title="Simulador" style="padding:9px 13px">📷</button>
+            </div>
+            <div class="quick-section" style="margin-top:14px">
+              <div class="qs-label">Acceso rápido</div>
+              <div class="quick-pills" id="qprods"></div>
+            </div>
+          </div>
+
+          <div id="lastCard" style="display:none">
+            <div class="last-added">
+              <div class="la-dot"></div>
+              <div class="la-info">
+                <div class="la-name" id="laName">—</div>
+                <div class="la-meta" id="laMeta">—</div>
+              </div>
+              <div class="la-price" id="laPrice">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: CARRITO -->
+        <div class="pos-right">
+          <div class="cart-panel">
+            <div class="cart-topbar">
+              <div class="cart-topbar-row">
+                <div class="cart-title">
+                  Carrito
+                  <span class="cart-count" id="cartCount">0</span>
                 </div>
+                <button class="btn btn-outline btn-sm" onclick="clearCart()">Limpiar</button>
+              </div>
             </div>
-        </div>
-        <div class="card">
-            <div class="card-title">¿Cómo se calcula?</div>
-            <p style="font-size:13px;color:var(--gray);line-height:1.7">
-                El precio incluye el costo del producto más una parte proporcional de tus gastos mensuales dividido entre las ventas esperadas. Luego se agrega un <strong>30% de ganancia neta</strong>.<br><br>
-                <code style="background:#f0f4f8;padding:4px 8px;border-radius:6px;font-size:12px">precio = (costo_u + gastos_mes / ventas) ÷ 0.70</code>
-            </p>
-        </div>
-    </section>
 
+            <div class="cart-items" id="cartItems">
+              <div class="cart-empty-state">
+                <div class="e-icon">🛒</div>
+                <div class="e-text">El carrito está vacío</div>
+                <div style="font-size:.68rem;color:var(--tx3);margin-top:4px;font-family:'Fira Code',monospace">agrega productos para comenzar</div>
+              </div>
+            </div>
+
+            <div class="totales-panel" id="totSec" style="display:none">
+              <div class="tot-row"><span>Subtotal</span><span class="tv" id="vSub">$0.00</span></div>
+              <div class="tot-row"><span>IVA 16%</span><span class="tv" id="vIva">$0.00</span></div>
+              <div class="tot-grand">
+                <span class="tg-label">Total</span>
+                <span class="tg-val" id="vTot">$0.00</span>
+              </div>
+              <div class="tot-row" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--b1)">
+                <span class="c-gray sm">Costo</span><span class="tv sm c-gray" id="vCosto">$0.00</span>
+              </div>
+              <div class="gan-row"><span>Ganancia</span><span class="tv" id="vGan">$0.00</span></div>
+              <div class="tot-row"><span class="c-gray xs">Margen</span><span class="tv xs c-gray" id="vMar">0%</span></div>
+            </div>
+
+            <div class="mp-section">
+              <div class="mp-label">Método de pago</div>
+              <div class="mp-grid">
+                <button class="mp-btn on" onclick="setMP(this,'Efectivo')">💵 Efectivo</button>
+                <button class="mp-btn" onclick="setMP(this,'Tarjeta')">💳 Tarjeta</button>
+                <button class="mp-btn" onclick="setMP(this,'Transf.')">📲 Transf.</button>
+                <button class="mp-btn" onclick="setMP(this,'Vale')">🎟️ Vale</button>
+              </div>
+            </div>
+
+            <div class="action-btns">
+              <button class="btn btn-p btn-full btn-lg" id="btnFin" onclick="finVenta()" disabled>
+                ⚡ Finalizar Venta
+              </button>
+              <button class="btn btn-ghost btn-full" onclick="newVenta()">🔄 Nueva Venta</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ INVENTARIO ══════ -->
+    <div class="panel" id="tab-inv">
+      <div class="full-panel">
+        <div class="sec-hdr">
+          <div>
+            <div class="sec-title">Inven<em>tario</em></div>
+            <div class="sec-sub">// gestión de productos · stock · márgenes</div>
+          </div>
+          <button class="btn btn-p" onclick="openAddProd()">+ Nuevo producto</button>
+        </div>
+        <div class="searchbar">
+          <span class="searchbar-icon">🔍</span>
+          <input id="busqInv" placeholder="Buscar por nombre o código..." oninput="renderInv()">
+          <select id="filtCat" onchange="renderInv()"><option value="">Todas las categorías</option></select>
+          <select id="filtTipo" onchange="renderInv()">
+            <option value="">Todos</option>
+            <option value="industrial">Industrial</option>
+            <option value="artesanal">Artesanal</option>
+          </select>
+        </div>
+        <div class="prod-grid" id="invGrid"></div>
+      </div>
+    </div>
+
+    <!-- ══════ ARTESANALES ══════ -->
+    <div class="panel" id="tab-art">
+      <div class="full-panel">
+        <div class="sec-hdr">
+          <div>
+            <div class="sec-title">Arte<em>sanales</em></div>
+            <div class="sec-sub">// paletas · gelatinas · helados · receta de costos</div>
+          </div>
+          <button class="btn btn-p" onclick="openAddArt()">+ Agregar</button>
+        </div>
+        <div class="prod-grid" id="artGrid"></div>
+      </div>
+    </div>
+
+    <!-- ══════ HISTORIAL ══════ -->
+    <div class="panel" id="tab-hist">
+      <div class="full-panel">
+        <div class="sec-hdr">
+          <div>
+            <div class="sec-title">Histo<em>rial</em></div>
+            <div class="sec-sub">// todas las transacciones registradas</div>
+          </div>
+        </div>
+        <div class="hist-list" id="histList"></div>
+      </div>
+    </div>
+
+    <!-- ══════ COSTOS & PE ══════ -->
+    <div class="panel" id="tab-costos">
+      <div class="full-panel">
+        <div class="sec-hdr">
+          <div>
+            <div class="sec-title">Costos &amp; <em>Equilibrio</em></div>
+            <div class="sec-sub">// CRT = MPD + MOD + CIF · punto de equilibrio diario</div>
+          </div>
+        </div>
+        <div class="costos-layout">
+          <!-- CONFIG -->
+          <div class="costos-config">
+            <div class="cfg-block">
+              <div class="cfg-head">⚙ Costos fijos diarios</div>
+              <div class="cfg-fields">
+                <div class="cfg-field">
+                  <div class="cfg-lbl">💰 Sueldos / día</div>
+                  <input class="cfg-inp" id="cfSueldos" type="number" step="0.01" value="500" oninput="recalc()">
+                </div>
+                <div class="cfg-field">
+                  <div class="cfg-lbl">🏠 Renta / día</div>
+                  <input class="cfg-inp" id="cfRenta" type="number" step="0.01" value="200" oninput="recalc()">
+                </div>
+                <div class="cfg-field">
+                  <div class="cfg-lbl">💡 Luz / día</div>
+                  <input class="cfg-inp" id="cfLuz" type="number" step="0.01" value="80" oninput="recalc()">
+                </div>
+                <div class="cfg-field">
+                  <div class="cfg-lbl">🔥 Gas / día</div>
+                  <input class="cfg-inp" id="cfGas" type="number" step="0.01" value="40" oninput="recalc()">
+                </div>
+                <div class="cfg-field">
+                  <div class="cfg-lbl">📦 Otros / día</div>
+                  <input class="cfg-inp" id="cfOtros" type="number" step="0.01" value="60" oninput="recalc()">
+                </div>
+                <div class="cfg-field">
+                  <div class="cfg-lbl">📅 Fecha a analizar</div>
+                  <input class="cfg-date" id="cfFecha" type="date" oninput="recalc()">
+                </div>
+                <button class="btn btn-p btn-full" onclick="recalc()" style="margin-top:4px">🔄 Recalcular</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- RESULTADOS -->
+          <div>
+            <div class="formula-grid" id="formulaGrid"></div>
+            <div id="crtBox"></div>
+            <div class="pe-box mt12" id="peBox"></div>
+            <div class="cfg-block mt12">
+              <div class="cfg-head">🍨 CIF distribuido — solo artesanales</div>
+              <div style="padding:14px 16px">
+                <div class="sm c-gray mb12">Distribución del CIF entre productos artesanales según su peso en el costo total</div>
+                <div class="cif-art-grid" id="cifArtGrid"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════ ESTADÍSTICAS ══════ -->
+    <div class="panel" id="tab-stats">
+      <div class="full-panel">
+        <div class="sec-hdr">
+          <div>
+            <div class="sec-title">Estadís<em>ticas</em></div>
+            <div class="sec-sub">// análisis de ventas por período</div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-ghost btn-sm" id="pbD" onclick="setPer('Diario',this)">Diario</button>
+            <button class="btn btn-ghost btn-sm" id="pbS" onclick="setPer('Semanal',this)">Semanal</button>
+            <button class="btn btn-ghost btn-sm" id="pbM" onclick="setPer('Mensual',this)">Mensual</button>
+          </div>
+        </div>
+        <div class="stats-layout">
+          <div>
+            <div class="cal-block">
+              <div class="cal-hdr">
+                <button class="cal-nav" onclick="calPrev()">‹</button>
+                <div class="cal-hdr-title" id="calTit"></div>
+                <button class="cal-nav" onclick="calNext()">›</button>
+              </div>
+              <div class="cal-grid" id="calGrid"></div>
+              <div class="cal-foot" id="calFoot"></div>
+            </div>
+          </div>
+          <div id="statsContent"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /shell -->
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- ══ MODALES ══ -->
+<div class="moverlay" id="mSim">
+  <div class="modal">
+    <div class="mhdr"><div class="mtitle">Simulador de Escáner</div><button class="mclose" onclick="cm('mSim')">✕</button></div>
+    <div class="mbody">
+      <p class="sm c-gray mb12">Selecciona un producto para simular el escaneo de su código:</p>
+      <div id="simList"></div>
+    </div>
+  </div>
 </div>
 
-<nav class="nav">
-    <button class="nav-btn active" onclick="ver('inv',this)"><span class="icon">📦</span>Inventario</button>
-    <button class="nav-btn" onclick="ver('ven',this)"><span class="icon">🛒</span>Ventas</button>
-    <button class="nav-btn" onclick="ver('dash',this)"><span class="icon">📊</span>Dashboard</button>
-    <button class="nav-btn" onclick="ver('cal',this)"><span class="icon">💰</span>Precios</button>
-</nav>
+<div class="moverlay" id="mAddProd">
+  <div class="modal">
+    <div class="mhdr"><div class="mtitle">Nuevo Producto</div><button class="mclose" onclick="cm('mAddProd')">✕</button></div>
+    <div class="mbody">
+      <div class="fld"><label class="lbl">Nombre *</label><input class="inp" id="ap_n" placeholder="Nombre del producto"></div>
+      <div class="g2">
+        <div class="fld"><label class="lbl">Categoría *</label><input class="inp" id="ap_c" placeholder="Bebidas..."></div>
+        <div class="fld"><label class="lbl">Proveedor</label><input class="inp" id="ap_pr" placeholder="Proveedor"></div>
+      </div>
+      <div class="g2">
+        <div class="fld"><label class="lbl">Precio Venta *</label><input class="inp" id="ap_pv" type="number" step="0.01" placeholder="0.00" oninput="pvPrev()"></div>
+        <div class="fld"><label class="lbl">Precio Compra *</label><input class="inp" id="ap_pc" type="number" step="0.01" placeholder="0.00" oninput="pvPrev()"></div>
+      </div>
+      <div class="g2">
+        <div class="fld"><label class="lbl">Código de Barras *</label><input class="inp mono" id="ap_cod" placeholder="7501055300008"></div>
+        <div class="fld"><label class="lbl">Stock inicial</label><input class="inp" id="ap_st" type="number" placeholder="0"></div>
+      </div>
+      <div id="pvPrevEl" class="alt alt-info" style="display:none"></div>
+      <button class="btn btn-p btn-full btn-lg mt12" onclick="saveProd()">Guardar producto</button>
+    </div>
+  </div>
+</div>
 
-<script src="https://unpkg.com/@zxing/library@0.20.0/umd/index.min.js"></script>
+<div class="moverlay" id="mAddArt">
+  <div class="modal">
+    <div class="mhdr"><div class="mtitle">Producto Artesanal</div><button class="mclose" onclick="cm('mAddArt')">✕</button></div>
+    <div class="mbody">
+      <div class="fld"><label class="lbl">Nombre *</label><input class="inp" id="art_n" placeholder="Ej. Paleta de tamarindo"></div>
+      <div class="g2">
+        <div class="fld"><label class="lbl">Categoría</label>
+          <select class="sel" id="art_c">
+            <option>Paletas</option><option>Gelatinas</option><option>Helados</option>
+            <option>Pasteles</option><option>Galletas</option><option>Bebidas</option>
+            <option>Postres</option><option>Otros</option>
+          </select>
+        </div>
+        <div class="fld"><label class="lbl">Precio Venta *</label><input class="inp" id="art_pv" type="number" step="0.01" placeholder="0.00" oninput="artRes()"></div>
+      </div>
+      <div class="lbl" style="margin-bottom:8px">Insumos / ingredientes</div>
+      <div id="insList"></div>
+      <button class="btn btn-outline btn-full mt8" onclick="om('mIns')">+ Agregar insumo</button>
+      <hr class="hr">
+      <div id="artResEl" class="alt alt-info" style="display:none"></div>
+      <button class="btn btn-p btn-full btn-lg mt12" onclick="saveArt()">Guardar artesanal</button>
+    </div>
+  </div>
+</div>
+
+<div class="moverlay" id="mIns">
+  <div class="modal" style="max-width:390px">
+    <div class="mhdr"><div class="mtitle">Agregar Insumo</div><button class="mclose" onclick="cm('mIns')">✕</button></div>
+    <div class="mbody">
+      <div class="fld"><label class="lbl">Nombre *</label><input class="inp" id="ins_n" placeholder="Ej. Azúcar"></div>
+      <div class="g2">
+        <div class="fld"><label class="lbl">Cantidad *</label><input class="inp" id="ins_q" type="number" step="0.01" placeholder="0.00"></div>
+        <div class="fld"><label class="lbl">Unidad</label>
+          <select class="sel" id="ins_u">
+            <option>kg</option><option>g</option><option>L</option><option>mL</option>
+            <option>pieza</option><option>paquete</option><option>caja</option><option>bolsa</option>
+          </select>
+        </div>
+      </div>
+      <div class="fld"><label class="lbl">Costo unitario *</label><input class="inp" id="ins_c" type="number" step="0.01" placeholder="0.00"></div>
+      <button class="btn btn-p btn-full btn-lg" onclick="saveIns()">Agregar insumo</button>
+    </div>
+  </div>
+</div>
+
+<div class="moverlay" id="mDet">
+  <div class="modal">
+    <div class="mhdr"><div class="mtitle">Detalle de Venta</div><button class="mclose" onclick="cm('mDet')">✕</button></div>
+    <div class="mbody" id="detContent"></div>
+    <div style="padding:0 22px 20px">
+      <button class="btn btn-amber btn-full btn-lg" onclick="printTicket()">🖨️ Imprimir ticket</button>
+    </div>
+  </div>
+</div>
+
+<div id="tprint" style="display:none;padding:20px;font-family:monospace;font-size:13px;max-width:300px;color:#000;background:#fff"></div>
+
 <script>
+// ══════════════════════════════════════════
+// DB & ESTADO
+// ══════════════════════════════════════════
+const DB0=[
+  {nombre:"Coca Cola 600ml",categoria:"Bebidas",precioVenta:20,precioCompra:14,proveedor:"Coca-Cola FEMSA",codigoBarras:"7501055300008",stock:100,esArtesanal:false,insumos:[]},
+  {nombre:"Pepsi 600ml",categoria:"Bebidas",precioVenta:18,precioCompra:12.5,proveedor:"PepsiCo",codigoBarras:"7501055300015",stock:100,esArtesanal:false,insumos:[]},
+  {nombre:"Sabritas Original",categoria:"Botanas",precioVenta:25,precioCompra:17,proveedor:"Sabritas",codigoBarras:"7501031102275",stock:60,esArtesanal:false,insumos:[]},
+  {nombre:"Doritos Nacho",categoria:"Botanas",precioVenta:28,precioCompra:19,proveedor:"Sabritas",codigoBarras:"7501031102282",stock:60,esArtesanal:false,insumos:[]},
+  {nombre:"Bimbo Pan Blanco",categoria:"Panadería",precioVenta:35,precioCompra:24,proveedor:"Bimbo",codigoBarras:"7501049900009",stock:40,esArtesanal:false,insumos:[]},
+  {nombre:"GAMESA Emperador",categoria:"Galletas",precioVenta:15,precioCompra:10,proveedor:"Gamesa",codigoBarras:"7501049900016",stock:80,esArtesanal:false,insumos:[]},
+  {nombre:"María Gamesa",categoria:"Galletas",precioVenta:12,precioCompra:7.5,proveedor:"Gamesa",codigoBarras:"7501049900023",stock:80,esArtesanal:false,insumos:[]},
+  {nombre:"Cheetos Bolitas",categoria:"Botanas",precioVenta:22,precioCompra:15,proveedor:"Sabritas",codigoBarras:"7501031102299",stock:60,esArtesanal:false,insumos:[]}
+];
 
-// ================= BASE DE DATOS DE PRODUCTOS =================
-const PRODUCTOS_DB = {
-    "7501055300172": { nombre:"Coca Cola 600 ml",  costoCaja:467, unidadesCaja:24, precioVenta:22 },
-    "7501055300196": { nombre:"Coca Cola 355 ml",  costoCaja:233, unidadesCaja:12, precioVenta:22 },
-    "7501055300202": { nombre:"Coca Cola 2L",       costoCaja:156, unidadesCaja:4,  precioVenta:44 },
-    "7501055300219": { nombre:"Coca Cola 3L",       costoCaja:178, unidadesCaja:6,  precioVenta:34 },
+let prods=[],ventas=[],carrito=[],insTemp=[];
+let metPago="Efectivo",ventaDet=null;
+let periodo="Diario",calMes=new Date(),calSel=new Date();
 
-    "7501020512143": { nombre:"Sprite 600 ml",      costoCaja:106, unidadesCaja:6,  precioVenta:20 },
-    "7501020512150": { nombre:"Fanta 600 ml",       costoCaja:106, unidadesCaja:6,  precioVenta:20 },
-    "7501020512167": { nombre:"Sprite 2L",          costoCaja:98,  unidadesCaja:4,  precioVenta:28 },
-    "7501020512174": { nombre:"Fanta 2L",           costoCaja:98,  unidadesCaja:4,  precioVenta:28 },
+function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
+function $p(n){return '$'+Number(n).toFixed(2)}
 
-    "7501000115604": { nombre:"Sidral 600 ml",      costoCaja:106, unidadesCaja:6,  precioVenta:20 },
-    "7501000115611": { nombre:"Sidral 2L",          costoCaja:98,  unidadesCaja:4,  precioVenta:28 },
-
-    "7501055300301": { nombre:"Agua Ciel 600 ml",   costoCaja:110, unidadesCaja:12, precioVenta:11 },
-    "7501055300318": { nombre:"Agua Ciel 1L",       costoCaja:134, unidadesCaja:12, precioVenta:14 },
-
-    "7501064191457": { nombre:"Heineken lata 355 ml", costoCaja:255, unidadesCaja:10, precioVenta:25 },
-    "7501055363603": { nombre:"Tecate lata",        costoCaja:300, unidadesCaja:12, precioVenta:24 },
-    "7501055363610": { nombre:"Indio lata",         costoCaja:300, unidadesCaja:12, precioVenta:24 },
-    "7501055363627": { nombre:"XX Lager lata",      costoCaja:320, unidadesCaja:12, precioVenta:26 },
-    "7501055363634": { nombre:"Sol lata",           costoCaja:330, unidadesCaja:12, precioVenta:28 },
-
-    "12200001234":   { nombre:"Monster 473 ml",     costoCaja:127, unidadesCaja:4,  precioVenta:39 },
-    "12200001235":   { nombre:"Monster 355 ml",     costoCaja:90,  unidadesCaja:4,  precioVenta:30 },
-
-    "7501055900012": { nombre:"Del Valle 413 ml",   costoCaja:147, unidadesCaja:6,  precioVenta:31 },
-    "7501055900029": { nombre:"Del Valle 1L",       costoCaja:147, unidadesCaja:6,  precioVenta:31 },
-
-    "7501000123456": { nombre:"Gansito",            costoCaja:191, unidadesCaja:15, precioVenta:18 },
-    "7501000123457": { nombre:"Pingüinos",          costoCaja:212, unidadesCaja:12, precioVenta:28 },
-    "7501000123458": { nombre:"Choco Roles",        costoCaja:169, unidadesCaja:25, precioVenta:22 },
-    "7501000123459": { nombre:"Emperador",          costoCaja:156, unidadesCaja:20, precioVenta:12 },
-    "7501000123460": { nombre:"Marías",             costoCaja:140, unidadesCaja:20, precioVenta:18 }
-};
-
-// ================= ESTADO =================
-let inventario = [];
-let ventas = [];
-try { inventario = JSON.parse(localStorage.getItem('proscan_v3') || '[]'); } catch(e) {}
-try { ventas     = JSON.parse(localStorage.getItem('proscan_ventas') || '[]'); } catch(e) {}
-
-let activeStream = null;
-let activeReader = null;
-let activeMode = '';
-
-// ================= TOAST =================
-function toast(msg, dur) {
-    dur = dur || 2800;
-    var t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(function(){ t.classList.remove('show'); }, dur);
+function save(){
+  localStorage.setItem('at4_p',JSON.stringify(prods));
+  localStorage.setItem('at4_v',JSON.stringify(ventas));
+  ['cfSueldos','cfRenta','cfLuz','cfGas','cfOtros'].forEach(id=>{
+    const el=document.getElementById(id);if(el)localStorage.setItem('at4_'+id,el.value);
+  });
 }
-
-// ================= NAVEGACIÓN =================
-function ver(sec, btn) {
-    document.querySelectorAll('section').forEach(function(s){ s.classList.remove('active'); });
-    document.getElementById('sec-' + sec).classList.add('active');
-    document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('active'); });
-    btn.classList.add('active');
-    pararCamara();
-    if (sec === 'dash') renderDashboard();
-}
-
-// ================= CÁMARA =================
-function pararCamara() {
-    if (activeReader) { try { activeReader.reset(); } catch(e){} activeReader = null; }
-    if (activeStream) { activeStream.getTracks().forEach(function(t){ t.stop(); }); activeStream = null; }
-    document.getElementById('wrap-in').style.display = 'none';
-    document.getElementById('wrap-out').style.display = 'none';
-}
-
-function encenderCamara(modo) {
-    pararCamara();
-    activeMode = modo;
-    var wrapId  = modo === 'in' ? 'wrap-in'  : 'wrap-out';
-    var videoId = modo === 'in' ? 'video-in' : 'video-out';
-    document.getElementById(wrapId).style.display = 'block';
-
-    if (typeof ZXing === 'undefined') { toast('⚠️ Librería de escaneo no disponible'); return; }
-
-    var reader = new ZXing.BrowserMultiFormatReader();
-    activeReader = reader;
-
-    reader.decodeFromVideoDevice(null, videoId, function(result, err) {
-        if (result) {
-            var cod = result.text || (result.getText && result.getText()) || '';
-            if (activeMode === 'in') {
-                document.getElementById('in-cod').value = cod;
-                autocompletarDB();
-            } else {
-                document.getElementById('v-cod').value = cod;
-                buscarProducto();
-            }
-            if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
-            pararCamara();
-            toast('✅ Código escaneado: ' + cod);
-        }
+function load(){
+  try{
+    const p=localStorage.getItem('at4_p'),v=localStorage.getItem('at4_v');
+    prods=p?JSON.parse(p):DB0.map(x=>({...x,id:uid()}));
+    ventas=v?JSON.parse(v):[];
+    if(!prods.length)prods=DB0.map(x=>({...x,id:uid()}));
+    ['cfSueldos','cfRenta','cfLuz','cfGas','cfOtros'].forEach(id=>{
+      const val=localStorage.getItem('at4_'+id),el=document.getElementById(id);
+      if(val&&el)el.value=val;
     });
+  }catch{prods=DB0.map(x=>({...x,id:uid()}));ventas=[];}
 }
 
-// ================= AUTOCOMPLETAR DESDE DB =================
-function autocompletarDB() {
-    var cod = document.getElementById('in-cod').value.trim();
-    var banner = document.getElementById('db-match');
-    if (!cod) { banner.style.display = 'none'; return; }
-
-    if (PRODUCTOS_DB[cod]) {
-        var p = PRODUCTOS_DB[cod];
-        document.getElementById('in-nom').value   = p.nombre;
-        document.getElementById('in-costo').value = p.costoCaja;
-        document.getElementById('in-uxc').value   = p.unidadesCaja;
-        document.getElementById('db-match-nom').textContent  = '✅ ' + p.nombre;
-        document.getElementById('db-match-info').textContent = 'Costo caja: $' + p.costoCaja + ' | ' + p.unidadesCaja + ' u/caja | Precio sugerido: $' + p.precioVenta;
-        banner.style.display = 'block';
-    } else {
-        banner.style.display = 'none';
-        // Si no está en DB pero existe en inventario previo, autocompletar nombre
-        var prev = inventario.find(function(p){ return p.cod === cod; });
-        if (prev) {
-            document.getElementById('in-nom').value = prev.nom;
-        }
-    }
+// ══════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════
+const tabLabels={pos:'Punto de Venta',inv:'Inventario',art:'Artesanales',hist:'Historial de Ventas',costos:'Costos & Equilibrio',stats:'Estadísticas'};
+function tab(name,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if(el)el.classList.add('active');
+  document.getElementById('tabLabel').textContent=tabLabels[name]||name;
+  if(name==='inv'){renderInv();renderCatFilt();}
+  if(name==='art')renderArt();
+  if(name==='hist')renderHist();
+  if(name==='costos')recalc();
+  if(name==='stats'){renderCal();renderStats();setPeriodoBtns();}
 }
 
-// ================= GUARDAR PRODUCTO =================
-function guardar() {
-    var cod    = document.getElementById('in-cod').value.trim();
-    var nom    = document.getElementById('in-nom').value.trim();
-    var costoC = parseFloat(document.getElementById('in-costo').value) || 0;
-    var numC   = parseInt(document.getElementById('in-cajas').value)   || 0;
-    var uxc    = parseInt(document.getElementById('in-uxc').value)     || 1;
+function om(id){document.getElementById(id).classList.add('open')}
+function cm(id){document.getElementById(id).classList.remove('open')}
+document.querySelectorAll('.moverlay').forEach(m=>{
+  m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');});
+});
 
-    if (!cod)        return toast('⚠️ Falta el código del producto');
-    if (!nom)        return toast('⚠️ Falta el nombre del producto');
-    if (costoC <= 0) return toast('⚠️ El costo por caja debe ser mayor a 0');
-    if (numC   <= 0) return toast('⚠️ Ingresa cuántas cajas compraste');
+// RELOJ
+setInterval(()=>{
+  const t=new Date().toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const parts=t.split(':');
+  document.getElementById('reloj').innerHTML=parts[0]+':'+parts[1]+'<br>'+parts[2];
+},1000);
 
-    var totalU = numC * uxc;
-    var costoU = costoC / uxc;
-
-    var existente = inventario.find(function(p){ return p.cod === cod; });
-    if (existente) {
-        existente.totalU += totalU;
-        existente.nom     = nom;
-        existente.costoU  = costoU;
-        existente.uxc     = uxc;
-        // Guardar precio de venta de DB si existe
-        if (PRODUCTOS_DB[cod]) existente.precioVenta = PRODUCTOS_DB[cod].precioVenta;
-        toast('🔄 Stock actualizado: +' + totalU + ' unidades');
-    } else {
-        var item = { cod: cod, nom: nom, totalU: totalU, uxc: uxc, costoU: costoU, id: Date.now() };
-        if (PRODUCTOS_DB[cod]) item.precioVenta = PRODUCTOS_DB[cod].precioVenta;
-        inventario.push(item);
-        toast('✅ Producto guardado correctamente');
-    }
-
-    ['in-cod','in-nom','in-costo','in-cajas','in-uxc'].forEach(function(id){ document.getElementById(id).value = ''; });
-    document.getElementById('db-match').style.display = 'none';
-
-    if (navigator.vibrate) navigator.vibrate(120);
-    guardarLS();
-    renderLista();
+// TOAST (derecha)
+let tt;
+function toast(msg,d=2500){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(tt);tt=setTimeout(()=>el.classList.remove('show'),d);
 }
 
-// ================= BUSCAR PRODUCTO AL VENDER =================
-function buscarProducto() {
-    var cod    = document.getElementById('v-cod').value.trim();
-    var status = document.getElementById('prod-status');
-    if (!cod) { status.style.display = 'none'; return; }
-
-    var prod  = inventario.find(function(p){ return p.cod === cod; });
-    var total = inventario.filter(function(p){ return p.cod === cod; }).reduce(function(s,p){ return s + p.totalU; }, 0);
-    var dbProd = PRODUCTOS_DB[cod];
-
-    status.style.display = 'block';
-    if (prod && total > 0) {
-        status.classList.remove('error');
-        document.getElementById('prod-nombre').textContent = prod.nom;
-        document.getElementById('prod-stock').textContent  = 'Stock disponible: ' + total + ' unidades';
-        var pv = prod.precioVenta || (dbProd ? dbProd.precioVenta : null);
-        document.getElementById('prod-precio').textContent = pv ? 'Precio sugerido: $' + pv : '';
-    } else {
-        status.classList.add('error');
-        var dbNom = dbProd ? dbProd.nombre : 'Producto no encontrado';
-        document.getElementById('prod-nombre').textContent = dbNom;
-        document.getElementById('prod-stock').textContent  = total === 0 ? 'Sin stock en inventario' : 'Código: ' + cod;
-        document.getElementById('prod-precio').textContent = '';
-    }
+// ══════════════════════════════════════════
+// POS
+// ══════════════════════════════════════════
+function addCodigo(){
+  const inp=document.getElementById('codigoInput');
+  const raw=inp.value.trim();
+  const cod=raw.replace(/\D/g,'')||raw;
+  if(!cod){toast('⚠ Ingresa un código');return;}
+  inp.value='';
+  let p=prods.find(x=>x.codigoBarras===cod||x.codigoBarras.replace(/\D/g,'')===cod);
+  if(p){p.stock<=0?toast('✕ Sin stock: '+p.nombre,3000):addCart(p);return;}
+  const loc=DB0.find(x=>x.codigoBarras.replace(/\D/g,'')===cod);
+  if(loc){addCart({...loc,id:uid()});return;}
+  toast('🔍 Buscando en línea...');
+  fetch(`https://world.openfoodfacts.org/api/v0/product/${cod}.json`)
+    .then(r=>r.json()).then(data=>{
+      if(data.product?.product_name){
+        const nm=data.product.product_name.slice(0,30);
+        const cat=(data.product.categories||'General').split(',')[0].trim();
+        const prov=data.product.brands||'Desconocido';
+        const pv=+(Math.random()*35+15).toFixed(2);
+        const pc=+(pv*(Math.random()*.2+.5)).toFixed(2);
+        const np={id:uid(),nombre:nm,categoria:cat,precioVenta:pv,precioCompra:pc,proveedor:prov,codigoBarras:cod,stock:10,esArtesanal:false,insumos:[],fechaRegistro:new Date().toISOString()};
+        prods.push(np);save();addCart(np);
+      }else toast('✕ No encontrado: '+cod,3500);
+    }).catch(()=>toast('✕ Sin conexión',3000));
 }
 
-// ================= VENDER =================
-function vender() {
-    var cod  = document.getElementById('v-cod').value.trim();
-    var cant = parseInt(document.getElementById('v-cant').value) || 0;
-
-    if (!cod)      return toast('⚠️ Escanea o escribe el código del producto');
-    if (cant <= 0) return toast('⚠️ Ingresa la cantidad a vender');
-
-    var total = inventario.filter(function(p){ return p.cod === cod; }).reduce(function(s,p){ return s + p.totalU; }, 0);
-    if (total === 0) return toast('❌ Producto no encontrado en inventario');
-    if (total < cant) return toast('❌ Stock insuficiente — hay solo ' + total + ' unidades');
-
-    var prod   = inventario.find(function(p){ return p.cod === cod; });
-    var dbProd = PRODUCTOS_DB[cod];
-    var pv     = (prod && prod.precioVenta) ? prod.precioVenta : (dbProd ? dbProd.precioVenta : 0);
-    var costoU = prod ? prod.costoU : 0;
-
-    var totalVenta    = pv * cant;
-    var totalGanancia = (pv - costoU) * cant;
-
-    // Descontar stock
-    var restante = cant;
-    inventario.forEach(function(p) {
-        if (restante <= 0 || p.cod !== cod) return;
-        if (p.totalU <= restante) { restante -= p.totalU; p.totalU = 0; }
-        else { p.totalU -= restante; restante = 0; }
-    });
-    inventario = inventario.filter(function(p){ return p.totalU > 0; });
-
-    // Registrar venta
-    ventas.push({
-        cod: cod,
-        nombre: prod ? prod.nom : (dbProd ? dbProd.nombre : cod),
-        cantidad: cant,
-        total: totalVenta,
-        ganancia: totalGanancia,
-        fecha: new Date().toLocaleString('es-MX')
-    });
-
-    document.getElementById('v-cod').value  = '';
-    document.getElementById('v-cant').value = '';
-    document.getElementById('prod-status').style.display = 'none';
-
-    if (navigator.vibrate) navigator.vibrate(120);
-    guardarLS();
-    renderLista();
-    toast('✅ Venta registrada: -' + cant + ' unidades' + (pv ? ' | Total: $' + totalVenta.toFixed(2) : ''));
+function addCart(p){
+  const item={...p,_cid:uid()};
+  carrito.push(item);
+  const ix=prods.findIndex(x=>x.id===p.id||x.codigoBarras===p.codigoBarras);
+  if(ix!==-1){prods[ix].stock--;save();}
+  renderCart();showLast(item);
+  toast('✓ '+p.nombre+' · '+$p(p.precioVenta));
 }
 
-// ================= DASHBOARD =================
-function renderDashboard() {
-    var totalV = ventas.reduce(function(a,b){ return a + (b.total || 0); }, 0);
-    var totalG = ventas.reduce(function(a,b){ return a + (b.ganancia || 0); }, 0);
-    document.getElementById('dash-total').textContent    = '$' + totalV.toFixed(2);
-    document.getElementById('dash-ganancia').textContent = '$' + totalG.toFixed(2);
-
-    var hist = document.getElementById('hist-lista');
-    if (ventas.length === 0) {
-        hist.innerHTML = '<div class="inv-empty"><div class="icon">📊</div><p>Sin ventas registradas aún.</p></div>';
-        return;
-    }
-    hist.innerHTML = ventas.slice().reverse().map(function(v) {
-        return '<div class="hist-item">'
-            + '<div class="hist-name">' + v.nombre + '</div>'
-            + '<div class="hist-meta">' + v.fecha + ' &bull; ' + v.cantidad + ' unidades</div>'
-            + '<div class="hist-totals">'
-            +   '<span class="hist-total-v">Venta: $' + (v.total || 0).toFixed(2) + '</span>'
-            +   '<span class="hist-total-g">Ganancia: $' + (v.ganancia || 0).toFixed(2) + '</span>'
-            + '</div>'
-            + '</div>';
-    }).join('');
+function showLast(p){
+  document.getElementById('laName').textContent=p.nombre;
+  document.getElementById('laMeta').textContent=p.categoria+(p.esArtesanal?' · artesanal':'');
+  document.getElementById('laPrice').textContent=$p(p.precioVenta);
+  document.getElementById('lastCard').style.display='block';
 }
 
-function corteCaja() {
-    var totalV = ventas.reduce(function(a,b){ return a + (b.total || 0); }, 0);
-    var totalG = ventas.reduce(function(a,b){ return a + (b.ganancia || 0); }, 0);
-    var msg = '🧾 CORTE DE CAJA\n'
-        + 'Fecha: ' + new Date().toLocaleString('es-MX') + '\n'
-        + 'Total ventas: $' + totalV.toFixed(2) + '\n'
-        + 'Ganancia: $' + totalG.toFixed(2) + '\n'
-        + 'Transacciones: ' + ventas.length;
-    alert(msg);
-    try {
-        localStorage.setItem('proscan_corte', JSON.stringify({
-            total: totalV, ganancia: totalG, fecha: new Date().toLocaleString('es-MX')
-        }));
-        toast('✅ Corte guardado');
-    } catch(e) {}
+function renderCart(){
+  const ci=document.getElementById('cartItems');
+  const ts=document.getElementById('totSec');
+  const bf=document.getElementById('btnFin');
+  document.getElementById('cartCount').textContent=carrito.length;
+  if(!carrito.length){
+    ci.innerHTML=`<div class="cart-empty-state"><div class="e-icon">🛒</div><div class="e-text">El carrito está vacío</div><div style="font-size:.68rem;color:var(--tx3);margin-top:4px;font-family:'Fira Code',monospace">agrega productos para comenzar</div></div>`;
+    ts.style.display='none';bf.disabled=true;return;
+  }
+  ci.innerHTML=carrito.map((p,i)=>`
+    <div class="ci">
+      <div class="ci-num">${i+1}</div>
+      <div class="ci-body">
+        <div class="ci-name">${p.nombre}</div>
+        <div class="ci-cat">${p.categoria}${p.esArtesanal?' · 🏠':''}</div>
+      </div>
+      <div class="ci-price">${$p(p.precioVenta)}</div>
+      <button class="ci-rm" onclick="delCart('${p._cid}')">✕</button>
+    </div>`).join('');
+  const sub=carrito.reduce((s,p)=>s+p.precioVenta,0);
+  const iva=sub*.16,tot=sub+iva;
+  const costo=carrito.reduce((s,p)=>s+p.precioCompra,0);
+  const gan=sub-costo,mar=sub>0?(gan/sub*100):0;
+  document.getElementById('vSub').textContent=$p(sub);
+  document.getElementById('vIva').textContent=$p(iva);
+  document.getElementById('vTot').textContent=$p(tot);
+  document.getElementById('vCosto').textContent=$p(costo);
+  document.getElementById('vGan').textContent=$p(gan);
+  document.getElementById('vMar').textContent=mar.toFixed(1)+'%';
+  ts.style.display='block';bf.disabled=false;
 }
 
-function limpiarVentas() {
-    if (!confirm('¿Limpiar el historial de ventas?')) return;
-    ventas = [];
-    guardarLS();
-    renderDashboard();
-    toast('🗑️ Historial de ventas borrado');
+function delCart(cid){
+  const ix=carrito.findIndex(p=>p._cid===cid);if(ix===-1)return;
+  const p=carrito[ix];
+  const px=prods.findIndex(x=>x.id===p.id||x.codigoBarras===p.codigoBarras);
+  if(px!==-1){prods[px].stock++;save();}
+  carrito.splice(ix,1);renderCart();toast('🗑 '+p.nombre+' eliminado');
 }
 
-// ================= LIMPIAR TODO =================
-function limpiarTodo() {
-    if (!confirm('¿Seguro que quieres borrar todo el inventario?')) return;
-    inventario = [];
-    guardarLS();
-    renderLista();
-    toast('🗑️ Inventario borrado');
+function clearCart(){
+  if(!carrito.length)return;
+  carrito.forEach(p=>{
+    const px=prods.findIndex(x=>x.id===p.id||x.codigoBarras===p.codigoBarras);
+    if(px!==-1){prods[px].stock++;save();}
+  });
+  carrito=[];renderCart();document.getElementById('lastCard').style.display='none';toast('🗑 Carrito vaciado');
 }
 
-// ================= CALCULADORA =================
-function recalculo() {
-    var s = parseFloat(document.getElementById('c-sueldo').value) || 0;
-    var f = parseFloat(document.getElementById('c-fijos').value)  || 0;
-    var c = parseFloat(document.getElementById('c-costo').value)  || 0;
-    var q = parseFloat(document.getElementById('c-meta').value)   || 1;
-    if (c <= 0 && s <= 0 && f <= 0) { document.getElementById('calc-result').style.display = 'none'; return; }
-    var gastoPorU = (s + f) / q;
-    var costoReal = c + gastoPorU;
-    var sugerido  = costoReal / 0.70;
-    document.getElementById('r-costo').textContent    = 'S/ ' + costoReal.toFixed(2);
-    document.getElementById('r-gasto').textContent    = 'S/ ' + gastoPorU.toFixed(2);
-    document.getElementById('r-sugerido').textContent = 'S/ ' + sugerido.toFixed(2);
-    document.getElementById('calc-result').style.display = 'block';
+function setMP(btn,m){
+  metPago=m;document.querySelectorAll('.mp-btn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');
 }
 
-// ================= RENDER LISTA INVENTARIO =================
-var emojis = ['🧃','📦','🥤','🍫','🧴','🥛','🛒','🍃','🧂','🫙'];
-function renderLista() {
-    var lista = document.getElementById('lista');
-    var grouped = {};
-    inventario.forEach(function(p) {
-        if (!grouped[p.cod]) grouped[p.cod] = { cod: p.cod, nom: p.nom, totalU: 0, uxc: p.uxc };
-        grouped[p.cod].totalU += p.totalU;
-    });
-    var items = Object.values(grouped);
-
-    var totalU = items.reduce(function(s,p){ return s + p.totalU; }, 0);
-    document.getElementById('total-prods').textContent = items.length;
-    document.getElementById('total-units').textContent = totalU;
-
-    if (items.length === 0) {
-        lista.innerHTML = '<div class="inv-empty"><div class="icon">📦</div><p>Sin productos aún.<br>Registra tu primera compra.</p></div>';
-        return;
-    }
-    lista.innerHTML = items.map(function(p, i) {
-        var cj = Math.floor(p.totalU / p.uxc);
-        var un = p.totalU % p.uxc;
-        var em = emojis[i % emojis.length];
-        return '<div class="inv-item">'
-            + '<div class="inv-emoji">' + em + '</div>'
-            + '<div class="inv-info">'
-            +   '<div class="inv-name">' + p.nom + '</div>'
-            +   '<div class="inv-code">' + p.cod + '</div>'
-            + '</div>'
-            + '<div class="inv-right">'
-            +   '<div class="inv-units">' + p.totalU + ' u</div>'
-            +   '<div class="inv-boxes">' + cj + ' c + ' + un + ' u</div>'
-            + '</div>'
-            + '</div>';
-    }).join('');
+function finVenta(){
+  if(!carrito.length)return;
+  const sub=carrito.reduce((s,p)=>s+p.precioVenta,0);
+  const iva=sub*.16,tot=sub+iva;
+  const costo=carrito.reduce((s,p)=>s+p.precioCompra,0);
+  const gan=sub-costo,mar=sub>0?(gan/sub*100):0;
+  ventas.push({id:uid(),fecha:new Date().toISOString(),productos:[...carrito],subtotal:sub,iva,total:tot,costoTotal:costo,gananciaTotal:gan,margenPromedio:mar,cantidadProductos:carrito.length,metodoPago:metPago});
+  save();toast('⚡ Venta completada · '+$p(tot));
+  carrito=[];renderCart();document.getElementById('lastCard').style.display='none';
 }
 
-// ================= GUARDAR LOCAL STORAGE =================
-function guardarLS() {
-    try {
-        localStorage.setItem('proscan_v3',     JSON.stringify(inventario));
-        localStorage.setItem('proscan_ventas', JSON.stringify(ventas));
-    } catch(e) {}
+function newVenta(){
+  carrito=[];renderCart();document.getElementById('lastCard').style.display='none';toast('🔄 Nueva venta');
 }
+
+function renderQProds(){
+  const c=document.getElementById('qprods');
+  c.innerHTML=prods.filter(p=>p.stock>0).slice(0,8).map(p=>
+    `<button class="qpill" onclick="addCart(${JSON.stringify(p).replace(/"/g,'&quot;')})">${p.nombre.split(' ').slice(0,2).join(' ')}</button>`
+  ).join('');
+}
+
+function openSim(){
+  document.getElementById('simList').innerHTML=prods.map(p=>`
+    <div class="hist-item" onclick="simScan('${p.codigoBarras}')" style="cursor:pointer">
+      <div class="hist-num">📷</div>
+      <div class="hist-info"><div class="hist-date">${p.nombre}</div><div class="hist-meta mono">${p.codigoBarras}</div></div>
+      <span class="bx ${p.stock>0?'bx-lime':'bx-rose'}">📦 ${p.stock}</span>
+      <div class="hist-amount"><div class="hist-total">${$p(p.precioVenta)}</div></div>
+    </div>`).join('');
+  om('mSim');
+}
+function simScan(cod){cm('mSim');document.getElementById('codigoInput').value=cod;addCodigo();}
+
+// ══════════════════════════════════════════
+// INVENTARIO
+// ══════════════════════════════════════════
+function renderCatFilt(){
+  const s=document.getElementById('filtCat');
+  const cats=[...new Set(prods.map(p=>p.categoria))].sort();
+  s.innerHTML='<option value="">Todas las categorías</option>'+cats.map(c=>`<option>${c}</option>`).join('');
+}
+function renderInv(){
+  const q=document.getElementById('busqInv').value.toLowerCase();
+  const cat=document.getElementById('filtCat').value;
+  const tipo=document.getElementById('filtTipo').value;
+  let lista=prods.filter(p=>{
+    if(q&&!p.nombre.toLowerCase().includes(q)&&!p.codigoBarras.includes(q))return false;
+    if(cat&&p.categoria!==cat)return false;
+    if(tipo==='artesanal'&&!p.esArtesanal)return false;
+    if(tipo==='industrial'&&p.esArtesanal)return false;
+    return true;
+  });
+  const g=document.getElementById('invGrid');
+  if(!lista.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="ei">📦</div><div class="et">Sin productos</div></div>`;return;}
+  g.innerHTML=lista.map(p=>{
+    const m=p.precioVenta>0?((p.precioVenta-p.precioCompra)/p.precioVenta*100):0;
+    const mc=m>=50?'var(--lime)':m>=30?'var(--amber)':'var(--rose)';
+    return `<div class="pcard">
+      <div class="pcard-head">
+        <span class="pcard-type ${p.esArtesanal?'art':'ind'}">${p.esArtesanal?'artesanal':'industrial'}</span>
+        <div class="pcard-name">${p.nombre}</div>
+        <div class="pcard-cat">${p.categoria} · ${p.proveedor||'—'}</div>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-prices">
+          <span class="price-tag venta">${$p(p.precioVenta)}</span>
+          <span class="price-tag compra">costo ${$p(p.precioCompra)}</span>
+          <span class="price-tag ${p.stock>0?'stock-ok':'stock-no'}">📦 ${p.stock}</span>
+        </div>
+        <div class="pcard-bar"><div class="pcard-bar-fill" style="width:${Math.min(m,100)}%;background:${mc}"></div></div>
+        <div class="xs c-gray" style="margin-bottom:8px">margen ${m.toFixed(1)}%</div>
+        <div class="pcard-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editStock('${p.id}')">📦 Stock</button>
+          <button class="btn btn-ghost btn-sm" onclick="addCart(${JSON.stringify(p).replace(/"/g,'&quot;')});tab('pos',document.querySelector('.sb-btn'))">🛒</button>
+          <button class="btn btn-danger btn-sm" onclick="delProd('${p.id}')">✕</button>
+        </div>
+        <div class="pcard-code">${p.codigoBarras}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function delProd(id){
+  if(!confirm('¿Eliminar este producto?'))return;
+  prods=prods.filter(p=>p.id!==id);save();renderInv();renderQProds();toast('🗑 Producto eliminado');
+}
+function editStock(id){
+  const p=prods.find(x=>x.id===id);if(!p)return;
+  const v=prompt(`Stock actual de "${p.nombre}": ${p.stock}\n\nNuevo stock:`,p.stock);
+  if(v===null)return;const n=parseInt(v);
+  if(isNaN(n)||n<0){toast('✕ Stock inválido');return;}
+  p.stock=n;save();renderInv();toast('📦 Stock: '+n);
+}
+function openAddProd(){
+  ['ap_n','ap_c','ap_pr','ap_pv','ap_pc','ap_cod','ap_st'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('pvPrevEl').style.display='none';om('mAddProd');
+}
+function pvPrev(){
+  const pv=parseFloat(document.getElementById('ap_pv').value);
+  const pc=parseFloat(document.getElementById('ap_pc').value);
+  const el=document.getElementById('pvPrevEl');
+  if(!isNaN(pv)&&!isNaN(pc)&&pv>0){
+    const m=((pv-pc)/pv*100).toFixed(1);
+    el.textContent=`Margen: ${m}% · Ganancia: ${$p(pv-pc)} por unidad`;
+    el.className='alt '+(m>=30?'alt-ok':'alt-warn');el.style.display='block';
+  }else el.style.display='none';
+}
+function saveProd(){
+  const n=document.getElementById('ap_n').value.trim();
+  const c=document.getElementById('ap_c').value.trim();
+  const pr=document.getElementById('ap_pr').value.trim();
+  const pv=parseFloat(document.getElementById('ap_pv').value);
+  const pc=parseFloat(document.getElementById('ap_pc').value);
+  const cod=document.getElementById('ap_cod').value.trim();
+  const st=parseInt(document.getElementById('ap_st').value)||0;
+  if(!n||!c||isNaN(pv)||isNaN(pc)||!cod){toast('✕ Completa los campos obligatorios');return;}
+  prods.push({id:uid(),nombre:n,categoria:c,proveedor:pr,precioVenta:pv,precioCompra:pc,codigoBarras:cod,stock:st,esArtesanal:false,insumos:[],fechaRegistro:new Date().toISOString()});
+  save();renderInv();renderQProds();cm('mAddProd');toast('✓ Producto guardado: '+n);
+}
+
+// ══════════════════════════════════════════
+// ARTESANALES
+// ══════════════════════════════════════════
+function openAddArt(){
+  document.getElementById('art_n').value='';document.getElementById('art_pv').value='';
+  insTemp=[];renderInsList();document.getElementById('artResEl').style.display='none';om('mAddArt');
+}
+function saveIns(){
+  const n=document.getElementById('ins_n').value.trim();
+  const q=parseFloat(document.getElementById('ins_q').value);
+  const u=document.getElementById('ins_u').value;
+  const c=parseFloat(document.getElementById('ins_c').value);
+  if(!n||isNaN(q)||isNaN(c)){toast('✕ Completa todos los campos');return;}
+  insTemp.push({id:uid(),nombre:n,cantidad:q,unidad:u,costoUnitario:c,costoTotal:q*c});
+  renderInsList();artRes();cm('mIns');
+}
+function renderInsList(){
+  const el=document.getElementById('insList');
+  if(!insTemp.length){el.innerHTML=`<div class="sm c-gray" style="padding:8px 0 10px;text-align:center;font-family:'Fira Code',monospace">sin insumos aún</div>`;return;}
+  el.innerHTML=insTemp.map((ins,i)=>`
+    <div class="irow">
+      <div><div class="semi sm">${ins.nombre}</div><div class="xs c-dim mono">${ins.cantidad} ${ins.unidad} × ${$p(ins.costoUnitario)}</div></div>
+      <div style="display:flex;gap:8px;align-items:center"><span class="c-amber mono sm">${$p(ins.costoTotal)}</span><button class="ci-rm" onclick="delIns(${i})">✕</button></div>
+    </div>`).join('');
+}
+function delIns(i){insTemp.splice(i,1);renderInsList();artRes();}
+function artRes(){
+  const pv=parseFloat(document.getElementById('art_pv').value)||0;
+  const ct=insTemp.reduce((s,i)=>s+i.costoTotal,0);
+  const gan=pv-ct,mar=pv>0?(gan/pv*100):0;
+  const el=document.getElementById('artResEl');
+  if(pv>0){
+    el.textContent=`Costo: ${$p(ct)} · Ganancia: ${$p(gan)} · Margen: ${mar.toFixed(1)}%${mar<30?' ⚠ Bajo':' ✓'}`;
+    el.className='alt '+(mar>=30?'alt-ok':'alt-warn');el.style.display='block';
+  }else el.style.display='none';
+}
+function saveArt(){
+  const n=document.getElementById('art_n').value.trim();
+  const c=document.getElementById('art_c').value;
+  const pv=parseFloat(document.getElementById('art_pv').value);
+  if(!n||isNaN(pv)||!insTemp.length){toast('✕ Nombre, precio e insumos requeridos');return;}
+  const ct=insTemp.reduce((s,i)=>s+i.costoTotal,0);
+  const cod='ART'+Date.now()+Math.floor(Math.random()*9999);
+  prods.push({id:uid(),nombre:n,categoria:c,precioVenta:pv,precioCompra:ct,proveedor:'Producción Propia',codigoBarras:cod,stock:0,esArtesanal:true,insumos:[...insTemp],fechaRegistro:new Date().toISOString()});
+  save();renderArt();renderInv();renderQProds();cm('mAddArt');toast('✓ Artesanal guardado: '+n);
+}
+function renderArt(){
+  const lista=prods.filter(p=>p.esArtesanal);
+  const g=document.getElementById('artGrid');
+  if(!lista.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="ei">🍨</div><div class="et">Sin productos artesanales</div></div>`;return;}
+  g.innerHTML=lista.map(p=>{
+    const m=p.precioVenta>0?((p.precioVenta-p.precioCompra)/p.precioVenta*100):0;
+    const gan=p.precioVenta-p.precioCompra;
+    return `<div class="pcard">
+      <div class="pcard-head">
+        <span class="pcard-type art">artesanal</span>
+        <div class="pcard-name">${p.nombre}</div>
+        <div class="pcard-cat">${p.categoria}</div>
+      </div>
+      <div class="pcard-body">
+        <div class="pcard-prices">
+          <span class="price-tag venta">${$p(p.precioVenta)}</span>
+          <span class="price-tag compra">costo ${$p(p.precioCompra)}</span>
+        </div>
+        <div class="sm" style="margin:8px 0">
+          <div>Ganancia: <span class="c-lime">${$p(gan)}</span></div>
+          <div>Margen: <span style="color:${m>=50?'var(--lime)':m>=30?'var(--amber)':'var(--rose)'}">${m.toFixed(1)}%</span></div>
+        </div>
+        ${p.insumos.length?`<details style="margin-bottom:8px"><summary class="xs c-gray" style="cursor:pointer;font-family:'Fira Code',monospace">insumos (${p.insumos.length})</summary><div style="margin-top:6px">${p.insumos.map(ins=>`<div class="irow"><span>${ins.nombre} ${ins.cantidad}${ins.unidad}</span><span class="c-amber">${$p(ins.costoTotal)}</span></div>`).join('')}</div></details>`:''}
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="price-tag ${p.stock>0?'stock-ok':'stock-no'}">📦 ${p.stock}</span>
+          <div class="pcard-actions">
+            <button class="btn btn-ghost btn-sm" onclick="editStock('${p.id}')">📦</button>
+            <button class="btn btn-p btn-sm" onclick="addCart(${JSON.stringify(p).replace(/"/g,'&quot;')});tab('pos',document.querySelector('.sb-btn'))">Vender</button>
+            <button class="btn btn-danger btn-sm" onclick="delProd('${p.id}')">✕</button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// HISTORIAL
+// ══════════════════════════════════════════
+function renderHist(){
+  const el=document.getElementById('histList');
+  if(!ventas.length){el.innerHTML=`<div class="empty"><div class="ei">📋</div><div class="et">Sin ventas registradas</div></div>`;return;}
+  const sorted=[...ventas].sort((a,b)=>new Date(b.fecha)-new Date(a.fecha));
+  el.innerHTML=sorted.map((v,i)=>`
+    <div class="hist-item" onclick="verDet('${v.id}')">
+      <div class="hist-num">${sorted.length-i}</div>
+      <div class="hist-info">
+        <div class="hist-date">${new Date(v.fecha).toLocaleString('es-MX')}</div>
+        <div class="hist-meta">${v.cantidadProductos} prods · ${v.metodoPago}</div>
+      </div>
+      <span class="hist-method">${v.metodoPago}</span>
+      <div class="hist-amount">
+        <div class="hist-total">${$p(v.total)}</div>
+        <div class="hist-gan">+${$p(v.gananciaTotal)}</div>
+      </div>
+    </div>`).join('');
+}
+function verDet(id){
+  ventaDet=ventas.find(v=>v.id===id);if(!ventaDet)return;
+  const v=ventaDet;
+  document.getElementById('detContent').innerHTML=`
+    <div style="text-align:center;padding:10px 0 18px">
+      <div style="font-family:'Instrument Serif',serif;font-size:1.5rem;color:var(--teal)">Ticket de Venta</div>
+      <div class="sm c-gray mono">${new Date(v.fecha).toLocaleString('es-MX')}</div>
+    </div>
+    <div class="mb12">
+      <div class="lbl">Productos (${v.cantidadProductos})</div>
+      ${v.productos.map(p=>`<div class="dr"><div class="dl">${p.nombre}${p.esArtesanal?' 🏠':''}</div><div class="dv c-blue">${$p(p.precioVenta)}</div></div>`).join('')}
+    </div>
+    <div style="background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:14px">
+      <div class="dr"><div class="dl">Subtotal</div><div class="dv">${$p(v.subtotal)}</div></div>
+      <div class="dr"><div class="dl">IVA 16%</div><div class="dv">${$p(v.iva)}</div></div>
+      <div class="dr"><div class="dl bold">TOTAL</div><div class="dv c-blue bold">${$p(v.total)}</div></div>
+      <div class="dr"><div class="dl c-gray">Pago</div><div class="dv c-teal">${v.metodoPago}</div></div>
+      <div class="dr"><div class="dl c-gray">Costo</div><div class="dv">${$p(v.costoTotal)}</div></div>
+      <div class="dr"><div class="dl c-lime bold">Ganancia</div><div class="dv c-lime bold">${$p(v.gananciaTotal)}</div></div>
+      <div class="dr"><div class="dl c-gray">Margen</div><div class="dv">${v.margenPromedio.toFixed(1)}%</div></div>
+    </div>`;
+  om('mDet');
+}
+function printTicket(){
+  if(!ventaDet)return;const v=ventaDet;
+  const t=document.getElementById('tprint');t.style.display='block';
+  t.innerHTML=`<div style="text-align:center"><h2>ABARROTECH POS</h2><hr><p>TICKET · ${new Date(v.fecha).toLocaleString('es-MX')}</p></div><hr>${v.productos.map(p=>`<p>${p.nombre}${p.esArtesanal?' 🏠':''}<br>&nbsp;&nbsp;${$p(p.precioVenta)}</p>`).join('')}<hr><p>SUB: ${$p(v.subtotal)} · IVA: ${$p(v.iva)}</p><p><b>TOTAL: ${$p(v.total)}</b></p><p>PAGO: ${v.metodoPago}</p><hr><p style="text-align:center">GRACIAS POR SU COMPRA</p>`;
+  window.print();t.style.display='none';
+}
+
+// ══════════════════════════════════════════
+// COSTOS & PE
+// ══════════════════════════════════════════
+function getCF_renta(){return(parseFloat(document.getElementById('cfRenta').value)||0)+(parseFloat(document.getElementById('cfLuz').value)||0)+(parseFloat(document.getElementById('cfGas').value)||0)+(parseFloat(document.getElementById('cfOtros').value)||0);}
+function getVentasDia(fecha){const d=new Date(fecha);return ventas.filter(v=>new Date(v.fecha).toDateString()===d.toDateString());}
+
+function recalc(){
+  save();
+  const fechaEl=document.getElementById('cfFecha');
+  const fecha=fechaEl.value?new Date(fechaEl.value+'T12:00:00'):new Date();
+  const vDia=getVentasDia(fecha);
+  const nUnidades=vDia.reduce((s,v)=>s+v.cantidadProductos,0);
+  const ventasBrutas=vDia.reduce((s,v)=>s+v.subtotal,0);
+  const mpd=vDia.reduce((s,v)=>s+v.costoTotal,0);
+  const sueldoTotal=parseFloat(document.getElementById('cfSueldos').value)||0;
+  const mod=sueldoTotal;
+  const cif=getCF_renta();
+  const crt=mpd+mod+cif;
+  const cf=mod+cif;
+  const mc=ventasBrutas>0?((ventasBrutas-mpd)/ventasBrutas):0;
+  const pe=mc>0?(cf/mc):null;
+  const pePct=pe?Math.min((ventasBrutas/pe)*100,100):0;
+  const fechaLabel=fecha.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  const noVentas=!vDia.length;
+
+  // FORMULA GRID
+  document.getElementById('formulaGrid').innerHTML=`
+    <div class="fcrd">
+      <div class="fcrd-head"><span class="fcrd-icon">📦</span><span class="fcrd-title">MPD — Materias Primas</span></div>
+      <div class="fcrd-body">
+        <div class="frow"><span class="fl">Fecha</span><span class="fv c-blue">${fechaLabel}</span></div>
+        <div class="frow"><span class="fl">Ventas del día</span><span class="fv">${vDia.length}</span></div>
+        <div class="frow"><span class="fl">Unidades</span><span class="fv">${nUnidades}</span></div>
+        <div class="frow"><span class="fl">Ventas brutas</span><span class="fv c-teal">${$p(ventasBrutas)}</span></div>
+        ${noVentas?'<div class="alt alt-warn" style="margin-top:8px;font-size:.75rem">⚠ Sin ventas este día</div>':''}
+      </div>
+      <div class="fcrd-total"><span class="ft-lbl">MPD del día</span><span class="ft-val c-amber">${$p(mpd)}</span></div>
+    </div>
+    <div class="fcrd">
+      <div class="fcrd-head"><span class="fcrd-icon">👷</span><span class="fcrd-title">MOD — Mano de Obra</span></div>
+      <div class="fcrd-body">
+        <div class="frow"><span class="fl">Sueldo diario</span><span class="fv c-blue">${$p(sueldoTotal)}</span></div>
+        <div class="frow"><span class="fl">Unidades vendidas</span><span class="fv">${nUnidades}</span></div>
+        ${nUnidades>0?`<div class="frow"><span class="fl">MOD por unidad</span><span class="fv c-amber">${$p(sueldoTotal/nUnidades)}</span></div>`:''}
+      </div>
+      <div class="fcrd-total"><span class="ft-lbl">MOD total día</span><span class="ft-val c-amber">${$p(mod)}</span></div>
+    </div>
+    <div class="fcrd">
+      <div class="fcrd-head"><span class="fcrd-icon">🏭</span><span class="fcrd-title">CIF — Costos Indirectos</span></div>
+      <div class="fcrd-body">
+        <div class="frow"><span class="fl">Renta</span><span class="fv">${$p(parseFloat(document.getElementById('cfRenta').value)||0)}</span></div>
+        <div class="frow"><span class="fl">Luz</span><span class="fv">${$p(parseFloat(document.getElementById('cfLuz').value)||0)}</span></div>
+        <div class="frow"><span class="fl">Gas</span><span class="fv">${$p(parseFloat(document.getElementById('cfGas').value)||0)}</span></div>
+        <div class="frow"><span class="fl">Otros</span><span class="fv">${$p(parseFloat(document.getElementById('cfOtros').value)||0)}</span></div>
+      </div>
+      <div class="fcrd-total"><span class="ft-lbl">CIF total día</span><span class="ft-val c-amber">${$p(cif)}</span></div>
+    </div>
+    <div class="fcrd" style="border-color:rgba(13,207,176,.3)">
+      <div class="fcrd-head" style="background:rgba(13,207,176,.05)"><span class="fcrd-icon">🧮</span><span class="fcrd-title" style="color:var(--teal)">Resultado del día</span></div>
+      <div class="fcrd-body">
+        <div class="frow"><span class="fl">Ventas brutas</span><span class="fv c-teal">${$p(ventasBrutas)}</span></div>
+        <div class="frow"><span class="fl">CRT (MPD+MOD+CIF)</span><span class="fv">${$p(crt)}</span></div>
+        <div class="frow"><span class="fl">Resultado neto</span><span class="fv" style="color:${ventasBrutas-crt>=0?'var(--lime)':'var(--rose)'}">${ventasBrutas-crt>=0?'+':''}${$p(ventasBrutas-crt)}</span></div>
+      </div>
+      <div class="fcrd-total" style="border-top-color:rgba(13,207,176,.3)"><span class="ft-lbl">CRT = MPD+MOD+CIF</span><span class="ft-val" style="color:var(--teal)">${$p(crt)}</span></div>
+    </div>`;
+
+  // PE BOX
+  document.getElementById('peBox').innerHTML=`
+    <div class="pe-head">
+      <div style="font-size:1.2rem">⚖️</div>
+      <div class="pe-head-title">Punto de Equilibrio — Ventas mínimas del día</div>
+    </div>
+    <div class="pe-body">
+      <div class="pe-eq">PE = Costos Fijos (MOD + CIF) ÷ Margen de Contribución%<br>MC% = (Ventas − MPD) ÷ Ventas = ${(mc*100).toFixed(1)}%</div>
+      <div class="pe-meta">
+        <div class="pe-meta-item"><div class="pe-meta-lbl">Costos fijos (MOD+CIF)</div><div class="pe-meta-val c-amber">${$p(cf)}</div></div>
+        <div class="pe-meta-item"><div class="pe-meta-lbl">Margen de contribución</div><div class="pe-meta-val c-blue">${(mc*100).toFixed(1)}%</div></div>
+      </div>
+      ${pe!==null?`
+        <div class="pe-meta-lbl">Ventas mínimas necesarias</div>
+        <div class="pe-number">${$p(pe)}</div>
+        <div class="pe-desc">al día para cubrir todos tus costos sin ganar ni perder</div>
+        <div class="pe-progress"><div class="pe-prog-fill" style="width:${pePct}%"></div></div>
+        <div class="pe-status">
+          <span class="mono xs c-gray">${pePct.toFixed(0)}% alcanzado</span>
+          <span style="font-size:.8rem;color:${ventasBrutas>=pe?'var(--lime)':'var(--rose)'}">
+            ${ventasBrutas>=pe?'✓ Punto de equilibrio alcanzado':'Faltan '+$p(pe-ventasBrutas)}
+          </span>
+        </div>`
+      :`<div class="alt alt-warn">No hay ventas este día · agrega ventas para calcular el PE</div>`}
+    </div>`;
+
+  // CIF ARTESANALES
+  renderCifArt(cif);
+}
+
+function renderCifArt(cifTotal){
+  const arts=prods.filter(p=>p.esArtesanal);
+  const el=document.getElementById('cifArtGrid');
+  if(!arts.length){el.innerHTML=`<div class="sm c-dim mono">No hay productos artesanales registrados</div>`;return;}
+  const costoTot=arts.reduce((s,p)=>s+p.precioCompra,0);
+  el.innerHTML=arts.map(p=>{
+    const peso=costoTot>0?(p.precioCompra/costoTot):0;
+    const cifAsig=cifTotal*peso;
+    const crtArts=p.precioCompra+cifAsig;
+    const mr=p.precioVenta>0?((p.precioVenta-crtArts)/p.precioVenta*100):0;
+    return `<div class="cif-art-card">
+      <div class="cif-art-name">${p.nombre}</div>
+      <div class="cif-art-row"><span class="rl">Mat. primas</span><span class="rv c-amber">${$p(p.precioCompra)}</span></div>
+      <div class="cif-art-row"><span class="rl">CIF (${(peso*100).toFixed(0)}%)</span><span class="rv c-violet">${$p(cifAsig)}</span></div>
+      <div class="cif-art-row"><span class="rl">CRT artesanal</span><span class="rv c-teal">${$p(crtArts)}</span></div>
+      <div class="cif-art-row"><span class="rl">Precio venta</span><span class="rv c-blue">${$p(p.precioVenta)}</span></div>
+      <div class="cif-art-row" style="border-top:1px solid var(--b1);margin-top:4px;padding-top:6px">
+        <span class="rl bold">Margen real</span>
+        <span class="rv" style="color:${mr>=30?'var(--lime)':mr>=0?'var(--amber)':'var(--rose)'}">${mr.toFixed(1)}%</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════
+// ESTADÍSTICAS
+// ══════════════════════════════════════════
+function setPer(p,btn){
+  periodo=p;setPeriodoBtns(btn);renderStats();
+}
+function setPeriodoBtns(active){
+  ['pbD','pbS','pbM'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.className='btn btn-ghost btn-sm';
+  });
+  const map={Diario:'pbD',Semanal:'pbS',Mensual:'pbM'};
+  const target=active?active:document.getElementById(map[periodo]);
+  if(target)target.className='btn btn-p btn-sm';
+}
+function ventasPer(fecha,per){
+  return ventas.filter(v=>{
+    const d=new Date(v.fecha),f=new Date(fecha);
+    if(per==='Diario')return d.toDateString()===f.toDateString();
+    if(per==='Semanal'){const sw=x=>{const c=new Date(x);c.setDate(c.getDate()-c.getDay());c.setHours(0,0,0,0);return c};return sw(d).getTime()===sw(f).getTime();}
+    return d.getMonth()===f.getMonth()&&d.getFullYear()===f.getFullYear();
+  });
+}
+function renderStats(){
+  const vf=ventasPer(calSel,periodo);
+  const el=document.getElementById('statsContent');
+  if(!vf.length){el.innerHTML=`<div class="empty"><div class="ei">📊</div><div class="et">Sin ventas en este período</div></div>`;return;}
+  const ingresos=vf.reduce((s,v)=>s+v.subtotal,0);
+  const gan=vf.reduce((s,v)=>s+v.gananciaTotal,0);
+  const iva=vf.reduce((s,v)=>s+v.iva,0);
+  const mar=vf.reduce((s,v)=>s+v.margenPromedio,0)/vf.length;
+  const ticket=ingresos/vf.length;
+  const rent=ingresos>0?(gan/ingresos*100):0;
+  const rb=rent>30?'✓ Excelente':rent>20?'✓ Bueno':rent>10?'⚠ Bajo':'✕ Crítico';
+  const rc=rent>30?'alt-ok':rent>20?'alt-ok':rent>10?'alt-warn':'alt-err';
+  const contP={};
+  vf.forEach(v=>v.productos.forEach(p=>{if(!contP[p.nombre])contP[p.nombre]={cant:0,cat:p.categoria};contP[p.nombre].cant++;}));
+  const topP=Object.entries(contP).sort((a,b)=>b[1].cant-a[1].cant).slice(0,5);
+  const contC={};
+  vf.forEach(v=>v.productos.forEach(p=>{if(!contC[p.categoria])contC[p.categoria]={total:0,cant:0};contC[p.categoria].total+=p.precioVenta;contC[p.categoria].cant++;}));
+  const topC=Object.entries(contC).sort((a,b)=>b[1].total-a[1].total);
+  el.innerHTML=`
+    <div class="stat-cards">
+      <div class="sc"><div class="sc-lbl">Total ventas</div><div class="sc-val blue">${vf.length}</div></div>
+      <div class="sc"><div class="sc-lbl">Ingresos</div><div class="sc-val teal">${$p(ingresos)}</div></div>
+      <div class="sc"><div class="sc-lbl">Ganancia</div><div class="sc-val lime">${$p(gan)}</div></div>
+      <div class="sc"><div class="sc-lbl">IVA generado</div><div class="sc-val amber">${$p(iva)}</div></div>
+      <div class="sc"><div class="sc-lbl">Ticket prom.</div><div class="sc-val">${$p(ticket)}</div></div>
+      <div class="sc"><div class="sc-lbl">Margen prom.</div><div class="sc-val">${mar.toFixed(1)}%</div></div>
+    </div>
+    <div class="alt ${rc} mb12">${rb} · Rentabilidad ${rent.toFixed(2)}%</div>
+    ${topP.length?`<div style="background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:14px;margin-bottom:12px">
+      <div class="lbl" style="margin-bottom:10px">🏆 Productos más vendidos</div>
+      <div class="top-list">${topP.map(([n,d],i)=>`<div class="top-item"><div class="top-n">${i+1}</div><div class="top-info"><div class="ti-name">${n}</div><div class="ti-cat">${d.cat}</div></div><span class="bx bx-blue">${d.cant} uds</span></div>`).join('')}</div>
+    </div>`:''}
+    ${topC.length?`<div style="background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:14px">
+      <div class="lbl" style="margin-bottom:10px">📂 Categorías</div>
+      <div class="top-list">${topC.map(([c,d])=>`<div class="top-item"><div class="top-n">·</div><div class="top-info"><div class="ti-name">${c}</div><div class="ti-cat">${d.cant} uds</div></div><span class="bx bx-teal">${$p(d.total)}</span></div>`).join('')}</div>
+    </div>`:''}`;
+}
+
+// CALENDARIO
+const MESES=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+function renderCal(){
+  const mes=calMes.getMonth(),anio=calMes.getFullYear();
+  document.getElementById('calTit').textContent=MESES[mes]+' '+anio;
+  document.getElementById('calFoot').textContent=calSel.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  const pD=new Date(anio,mes,1).getDay(),dM=new Date(anio,mes+1,0).getDate(),hoy=new Date();
+  let h=['D','L','M','M','J','V','S'].map(d=>`<div class="cdn">${d}</div>`).join('');
+  for(let i=0;i<pD;i++)h+='<div class="cd emp"></div>';
+  for(let d=1;d<=dM;d++){
+    const f=new Date(anio,mes,d);
+    const hQ=f.toDateString()===hoy.toDateString(),sQ=f.toDateString()===calSel.toDateString();
+    h+=`<div class="cd ${hQ?'today':''} ${sQ?'sel':''}" onclick="selF(${anio},${mes},${d})">${d}</div>`;
+  }
+  document.getElementById('calGrid').innerHTML=h;
+}
+function selF(y,m,d){calSel=new Date(y,m,d);renderCal();renderStats();}
+function calPrev(){calMes.setMonth(calMes.getMonth()-1);renderCal();}
+function calNext(){calMes.setMonth(calMes.getMonth()+1);renderCal();}
 
 // INIT
-renderLista();
+load();
+renderCart();
+renderQProds();
+document.getElementById('cfFecha').value=new Date().toISOString().split('T')[0];
+setPeriodoBtns();
 </script>
 </body>
 </html>
