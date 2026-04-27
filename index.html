@@ -1087,6 +1087,56 @@ body {
   .stat-cards { grid-template-columns: 1fr; }
   .pe-number { font-size: 1.8rem; }
 }
+
+/* ── CANTIDAD EN CARRITO ── */
+.ci-qty {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--s3);
+  border: 1px solid var(--b1);
+  border-radius: 7px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.qty-btn {
+  background: none;
+  border: none;
+  color: var(--tx2);
+  width: 26px;
+  height: 26px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.qty-btn:hover {
+  background: var(--b2);
+  color: var(--tx);
+}
+.qty-num {
+  font-family: 'Fira Code', monospace;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--tx);
+  min-width: 22px;
+  text-align: center;
+  padding: 0 2px;
+}
+/* ajuste del item para que quepa bien */
+.ci {
+  gap: 8px;
+}
+.ci-price {
+  font-size: .82rem;
+  min-width: 52px;
+  text-align: right;
+}
+
 </style>
 </head>
 <body>
@@ -1146,19 +1196,18 @@ body {
           <div class="pg-hdr">
             <div>
               <div class="pg-title">Punto de <em>Venta</em></div>
-              <div class="pg-sub">Escanea o escribe un código · Enter para agregar</div>
+
             </div>
           </div>
 
           <div class="input-zone">
-            <div class="scan-row">
-              <input class="scan-input" id="codigoInput" placeholder="Código de barras o nombre del producto..."
-                onkeydown="if(event.key==='Enter')addCodigo()">
-              <button class="btn btn-p" onclick="addCodigo()">Agregar</button>
-              <button class="btn btn-outline" onclick="openSim()" title="Simulador" style="padding:9px 13px">📷</button>
-            </div>
-            <div class="quick-section" style="margin-top:14px">
-              <div class="qs-label">Acceso rápido</div>
+            <!-- input oculto para que addCodigo() siga funcionando con el scanner -->
+            <input id="codigoInput" style="display:none">
+            <div class="quick-section">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+                <div class="qs-label" style="margin:0">Acceso rápido</div>
+                <button class="btn btn-outline" onclick="openSim()" title="Simulador" style="padding:7px 12px">📷</button>
+              </div>
               <div class="quick-pills" id="qprods"></div>
             </div>
           </div>
@@ -1405,7 +1454,7 @@ body {
         <div class="fld"><label class="lbl">Precio Compra *</label><input class="inp" id="ap_pc" type="number" step="0.01" placeholder="0.00" oninput="pvPrev()"></div>
       </div>
       <div class="g2">
-        <div class="fld"><label class="lbl">Código de Barras *</label><input class="inp mono" id="ap_cod" placeholder="7501055300008"></div>
+        <div class="fld"><label class="lbl">Código de Barras *</label><div style="display:flex;gap:6px"><input class="inp mono" id="ap_cod" placeholder="7501055300008" style="flex:1"><button class="btn btn-outline" onclick="abrirScanner('prod')" style="padding:9px 13px;flex-shrink:0" title="Escanear código">📷</button></div></div>
         <div class="fld"><label class="lbl">Stock inicial</label><input class="inp" id="ap_st" type="number" placeholder="0"></div>
       </div>
       <div id="pvPrevEl" class="alt alt-info" style="display:none"></div>
@@ -1580,11 +1629,22 @@ function addCodigo(){
 }
 
 function addCart(p){
-  const item={...p,_cid:uid()};
-  carrito.push(item);
-  const ix=prods.findIndex(x=>x.id===p.id||x.codigoBarras===p.codigoBarras);
-  if(ix!==-1){prods[ix].stock--;save();}
-  renderCart();showLast(item);
+  // Buscar si ya existe en el carrito (agrupar por codigoBarras)
+  const existe=carrito.find(x=>x.codigoBarras===p.codigoBarras);
+  if(existe){
+    // Verificar stock disponible
+    const ix=prods.findIndex(x=>x.id===p.id||x.codigoBarras===p.codigoBarras);
+    const stockDisp=ix!==-1?prods[ix].stock:0;
+    if(stockDisp<=0){toast('✕ Sin stock suficiente: '+p.nombre,3000);return;}
+    existe.cantidad=(existe.cantidad||1)+1;
+    if(ix!==-1){prods[ix].stock--;save();}
+  }else{
+    const item={...p,_cid:uid(),cantidad:1};
+    carrito.push(item);
+    const ix=prods.findIndex(x=>x.id===p.id||x.codigoBarras===p.codigoBarras);
+    if(ix!==-1){prods[ix].stock--;save();}
+  }
+  renderCart();showLast(p);
   toast('✓ '+p.nombre+' · '+$p(p.precioVenta));
 }
 
@@ -1599,24 +1659,32 @@ function renderCart(){
   const ci=document.getElementById('cartItems');
   const ts=document.getElementById('totSec');
   const bf=document.getElementById('btnFin');
-  document.getElementById('cartCount').textContent=carrito.length;
+  const totalUn=carrito.reduce((s,p)=>s+(p.cantidad||1),0);
+  document.getElementById('cartCount').textContent=totalUn;
   if(!carrito.length){
     ci.innerHTML=`<div class="cart-empty-state"><div class="e-icon">🛒</div><div class="e-text">El carrito está vacío</div><div style="font-size:.68rem;color:var(--tx3);margin-top:4px;font-family:'Fira Code',monospace">agrega productos para comenzar</div></div>`;
     ts.style.display='none';bf.disabled=true;return;
   }
-  ci.innerHTML=carrito.map((p,i)=>`
+  ci.innerHTML=carrito.map((p,i)=>{
+    const cant=p.cantidad||1;
+    const subtotalItem=p.precioVenta*cant;
+    return `
     <div class="ci">
-      <div class="ci-num">${i+1}</div>
       <div class="ci-body">
         <div class="ci-name">${p.nombre}</div>
         <div class="ci-cat">${p.categoria}${p.esArtesanal?' · 🏠':''}</div>
       </div>
-      <div class="ci-price">${$p(p.precioVenta)}</div>
-      <button class="ci-rm" onclick="delCart('${p._cid}')">✕</button>
-    </div>`).join('');
-  const sub=carrito.reduce((s,p)=>s+p.precioVenta,0);
+      <div class="ci-qty">
+        <button class="qty-btn" onclick="delCart('${p._cid}')">−</button>
+        <span class="qty-num">${cant}</span>
+        <button class="qty-btn" onclick="sumarCart('${p._cid}')">+</button>
+      </div>
+      <div class="ci-price">${$p(subtotalItem)}</div>
+    </div>`;
+  }).join('');
+  const sub=carrito.reduce((s,p)=>s+(p.precioVenta*(p.cantidad||1)),0);
   const iva=sub*.16,tot=sub+iva;
-  const costo=carrito.reduce((s,p)=>s+p.precioCompra,0);
+  const costo=carrito.reduce((s,p)=>s+(p.precioCompra*(p.cantidad||1)),0);
   const gan=sub-costo,mar=sub>0?(gan/sub*100):0;
   document.getElementById('vSub').textContent=$p(sub);
   document.getElementById('vIva').textContent=$p(iva);
@@ -1631,15 +1699,33 @@ function delCart(cid){
   const ix=carrito.findIndex(p=>p._cid===cid);if(ix===-1)return;
   const p=carrito[ix];
   const px=prods.findIndex(x=>x.id===p.id||x.codigoBarras===p.codigoBarras);
-  if(px!==-1){prods[px].stock++;save();}
-  carrito.splice(ix,1);renderCart();toast('🗑 '+p.nombre+' eliminado');
+  if((p.cantidad||1)>1){
+    p.cantidad--;
+    if(px!==-1){prods[px].stock++;save();}
+    renderCart();
+  }else{
+    if(px!==-1){prods[px].stock++;save();}
+    carrito.splice(ix,1);
+    renderCart();
+    toast('🗑 '+p.nombre+' eliminado');
+  }
+}
+function sumarCart(cid){
+  const ix=carrito.findIndex(p=>p._cid===cid);if(ix===-1)return;
+  const p=carrito[ix];
+  const px=prods.findIndex(x=>x.id===p.id||x.codigoBarras===p.codigoBarras);
+  const stockDisp=px!==-1?prods[px].stock:0;
+  if(stockDisp<=0){toast('✕ Sin stock suficiente',2500);return;}
+  p.cantidad=(p.cantidad||1)+1;
+  if(px!==-1){prods[px].stock--;save();}
+  renderCart();
 }
 
 function clearCart(){
   if(!carrito.length)return;
   carrito.forEach(p=>{
     const px=prods.findIndex(x=>x.id===p.id||x.codigoBarras===p.codigoBarras);
-    if(px!==-1){prods[px].stock++;save();}
+    if(px!==-1){prods[px].stock+=(p.cantidad||1);save();}
   });
   carrito=[];renderCart();document.getElementById('lastCard').style.display='none';toast('🗑 Carrito vaciado');
 }
@@ -1652,9 +1738,10 @@ function finVenta(){
   if(!carrito.length)return;
   const sub=carrito.reduce((s,p)=>s+p.precioVenta,0);
   const iva=sub*.16,tot=sub+iva;
-  const costo=carrito.reduce((s,p)=>s+p.precioCompra,0);
+  const costo=carrito.reduce((s,p)=>s+(p.precioCompra*(p.cantidad||1)),0);
   const gan=sub-costo,mar=sub>0?(gan/sub*100):0;
-  ventas.push({id:uid(),fecha:new Date().toISOString(),productos:[...carrito],subtotal:sub,iva,total:tot,costoTotal:costo,gananciaTotal:gan,margenPromedio:mar,cantidadProductos:carrito.length,metodoPago:metPago});
+  const totalUnidades=carrito.reduce((s,p)=>s+(p.cantidad||1),0);
+  ventas.push({id:uid(),fecha:new Date().toISOString(),productos:[...carrito],subtotal:sub,iva,total:tot,costoTotal:costo,gananciaTotal:gan,margenPromedio:mar,cantidadProductos:totalUnidades,metodoPago:metPago});
   save();toast('⚡ Venta completada · '+$p(tot));
   carrito=[];renderCart();document.getElementById('lastCard').style.display='none';
 }
@@ -2113,3 +2200,333 @@ setPeriodoBtns();
 </script>
 </body>
 </html>
+
+<!-- ══ MODAL ESCÁNER REAL ══ -->
+<div class="moverlay" id="mScanner" style="z-index:600;align-items:stretch;padding:0">
+  <div style="
+    width:100%;height:100%;
+    background:#000;
+    display:flex;flex-direction:column;
+    position:relative;
+  ">
+    <!-- Header del scanner -->
+    <div style="
+      position:absolute;top:0;left:0;right:0;z-index:10;
+      background:linear-gradient(180deg,rgba(0,0,0,.85) 0%,transparent 100%);
+      padding:18px 20px 40px;
+      display:flex;align-items:center;justify-content:space-between;
+    ">
+      <div style="font-family:'Fira Code',monospace;font-size:.8rem;color:rgba(255,255,255,.7)">
+        📷 <span id="scannerTitle">Escanear código</span>
+      </div>
+      <button onclick="cerrarScanner()" style="
+        background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);
+        color:#fff;border-radius:8px;padding:7px 14px;
+        font-family:'Familjen Grotesk',sans-serif;font-size:.85rem;font-weight:600;
+        cursor:pointer;
+      ">✕ Cerrar</button>
+    </div>
+
+    <!-- Video -->
+    <video id="scannerVideo" style="
+      width:100%;height:100%;object-fit:cover;
+      display:block;
+    " playsinline autoplay muted></video>
+
+    <!-- Canvas oculto para procesar frames -->
+    <canvas id="scannerCanvas" style="display:none"></canvas>
+
+    <!-- Marco de escaneo -->
+    <div style="
+      position:absolute;inset:0;
+      display:flex;align-items:center;justify-content:center;
+      pointer-events:none;
+    ">
+      <div id="scanFrame" style="
+        width:260px;height:160px;
+        position:relative;
+      ">
+        <!-- Esquinas del marco -->
+        <div style="position:absolute;top:0;left:0;width:28px;height:28px;border-top:3px solid #0dcfb0;border-left:3px solid #0dcfb0;border-radius:4px 0 0 0"></div>
+        <div style="position:absolute;top:0;right:0;width:28px;height:28px;border-top:3px solid #0dcfb0;border-right:3px solid #0dcfb0;border-radius:0 4px 0 0"></div>
+        <div style="position:absolute;bottom:0;left:0;width:28px;height:28px;border-bottom:3px solid #0dcfb0;border-left:3px solid #0dcfb0;border-radius:0 0 0 4px"></div>
+        <div style="position:absolute;bottom:0;right:0;width:28px;height:28px;border-bottom:3px solid #0dcfb0;border-right:3px solid #0dcfb0;border-radius:0 0 4px 0"></div>
+        <!-- Línea de escaneo animada -->
+        <div id="scanLine" style="
+          position:absolute;left:4px;right:4px;height:2px;
+          background:linear-gradient(90deg,transparent,#0dcfb0,transparent);
+          top:50%;
+          animation:scanAnim 1.8s ease-in-out infinite;
+        "></div>
+      </div>
+    </div>
+
+    <!-- Info inferior -->
+    <div style="
+      position:absolute;bottom:0;left:0;right:0;
+      background:linear-gradient(0deg,rgba(0,0,0,.85) 0%,transparent 100%);
+      padding:40px 20px 30px;
+      text-align:center;
+    ">
+      <div id="scannerMsg" style="
+        font-family:'Fira Code',monospace;font-size:.78rem;
+        color:rgba(255,255,255,.6);margin-bottom:14px;
+      ">Apunta la cámara al código de barras</div>
+
+      <!-- Botón linterna -->
+      <button id="btnLinterna" onclick="toggleLinterna()" style="
+        background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
+        color:#fff;border-radius:8px;padding:8px 18px;
+        font-family:'Familjen Grotesk',sans-serif;font-size:.82rem;font-weight:600;
+        cursor:pointer;margin-right:8px;
+      ">🔦 Linterna</button>
+
+      <!-- Input manual fallback -->
+      <div style="margin-top:12px;display:flex;gap:8px;max-width:340px;margin-left:auto;margin-right:auto">
+        <input id="scannerManualInput" placeholder="O escribe el código aquí..."
+          style="
+            flex:1;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+            border-radius:8px;color:#fff;padding:9px 12px;
+            font-family:'Fira Code',monospace;font-size:.85rem;outline:none;
+          "
+          onkeydown="if(event.key==='Enter'){usarCodigoManualScanner()}"
+          oninput="this.style.borderColor='rgba(13,207,176,.6)'"
+        >
+        <button onclick="usarCodigoManualScanner()" style="
+          background:#1d6feb;border:none;color:#fff;
+          border-radius:8px;padding:9px 14px;
+          font-family:'Familjen Grotesk',sans-serif;font-weight:700;font-size:.82rem;
+          cursor:pointer;
+        ">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes scanAnim {
+  0%   { top: 10%; opacity: 1; }
+  50%  { top: 85%; opacity: 1; }
+  100% { top: 10%; opacity: 1; }
+}
+</style>
+
+<script>
+/* ══════════════════════════════════════════
+   ESCÁNER REAL DE CÁMARA
+   Usa BarcodeDetector API (Chrome/Android/Safari 17+)
+   Con fallback a jsQR para navegadores sin soporte
+══════════════════════════════════════════ */
+
+let scannerStream = null;
+let scannerMode   = 'pos';   // 'pos' | 'prod'
+let scannerActive = false;
+let scannerRAF    = null;
+let linternaOn    = false;
+let jsQRLoaded    = false;
+
+// Cargar jsQR como fallback (solo si BarcodeDetector no existe)
+function cargarJsQR(cb) {
+  if (window.jsQR) { cb(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
+  s.onload = () => { jsQRLoaded = true; cb(); };
+  s.onerror = () => cb(); // sin fallback, igual intentamos
+  document.head.appendChild(s);
+}
+
+function abrirScanner(modo) {
+  scannerMode = modo;
+  const titulo = modo === 'pos'
+    ? 'Escanear para agregar al carrito'
+    : 'Escanear código del producto';
+  document.getElementById('scannerTitle').textContent = titulo;
+  document.getElementById('scannerMsg').textContent = 'Apunta la cámara al código de barras';
+  document.getElementById('scannerManualInput').value = '';
+  document.getElementById('btnLinterna').textContent = '🔦 Linterna';
+  linternaOn = false;
+
+  // Comprobar soporte de cámara
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast('❌ Tu navegador no soporta la cámara. Escribe el código manualmente.', 4000);
+    // Abrir el modal igual para que puedan escribir manualmente
+    om('mScanner');
+    document.getElementById('scannerVideo').style.display = 'none';
+    document.getElementById('scannerMsg').textContent = '⚠ Cámara no disponible — escribe el código abajo';
+    return;
+  }
+
+  om('mScanner');
+  iniciarCamara();
+}
+
+async function iniciarCamara() {
+  try {
+    // Pedir cámara trasera preferentemente
+    scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width:  { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    });
+
+    const video = document.getElementById('scannerVideo');
+    video.style.display = 'block';
+    video.srcObject = scannerStream;
+    await video.play();
+    scannerActive = true;
+
+    // Intentar BarcodeDetector primero, si no, jsQR
+    if ('BarcodeDetector' in window) {
+      iniciarBarcodeDetector();
+    } else {
+      cargarJsQR(iniciarJsQR);
+    }
+
+  } catch (err) {
+    let msg = '❌ No se pudo acceder a la cámara.';
+    if (err.name === 'NotAllowedError')  msg = '❌ Permiso de cámara denegado. Permite el acceso e intenta de nuevo.';
+    if (err.name === 'NotFoundError')    msg = '❌ No se encontró ninguna cámara.';
+    if (err.name === 'NotReadableError') msg = '❌ La cámara está en uso por otra app.';
+    document.getElementById('scannerMsg').textContent = msg.replace('❌ ','');
+    toast(msg, 4000);
+  }
+}
+
+/* ── BarcodeDetector (nativo) ── */
+async function iniciarBarcodeDetector() {
+  const formatos = [
+    'ean_13','ean_8','upc_a','upc_e',
+    'code_128','code_39','code_93',
+    'qr_code','pdf417','data_matrix',
+    'itf','aztec','codabar'
+  ];
+  const detector = new BarcodeDetector({ formats: formatos });
+  const video    = document.getElementById('scannerVideo');
+
+  async function detectar() {
+    if (!scannerActive) return;
+    try {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        const codigos = await detector.detect(video);
+        if (codigos.length > 0) {
+          const codigo = codigos[0].rawValue;
+          manejarCodigoEscaneado(codigo);
+          return; // detener loop
+        }
+      }
+    } catch (e) { /* continuar */ }
+    scannerRAF = requestAnimationFrame(detectar);
+  }
+  detectar();
+}
+
+/* ── jsQR (fallback) ── */
+function iniciarJsQR() {
+  const video  = document.getElementById('scannerVideo');
+  const canvas = document.getElementById('scannerCanvas');
+  const ctx    = canvas.getContext('2d');
+
+  function detectar() {
+    if (!scannerActive) return;
+    if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      if (window.jsQR) {
+        const code = jsQR(img.data, img.width, img.height, {
+          inversionAttempts: 'dontInvert'
+        });
+        if (code && code.data) {
+          manejarCodigoEscaneado(code.data);
+          return;
+        }
+      }
+    }
+    scannerRAF = requestAnimationFrame(detectar);
+  }
+  detectar();
+}
+
+/* ── Cuando se detecta un código ── */
+function manejarCodigoEscaneado(codigo) {
+  scannerActive = false;
+  if (scannerRAF) { cancelAnimationFrame(scannerRAF); scannerRAF = null; }
+
+  // Vibrar si está disponible
+  if (navigator.vibrate) navigator.vibrate(80);
+
+  // Feedback visual
+  document.getElementById('scanFrame').style.borderColor = '#56d364';
+  document.getElementById('scannerMsg').textContent = '✓ Código detectado: ' + codigo;
+
+  setTimeout(() => {
+    cerrarScanner();
+    usarCodigo(codigo);
+  }, 400);
+}
+
+/* ── Usar el código según el modo ── */
+function usarCodigo(codigo) {
+  const cod = codigo.replace(/\D/g, '') || codigo;
+  if (scannerMode === 'pos') {
+    // Poner en el input del POS y agregar
+    const inp = document.getElementById('codigoInput');
+    inp.value = cod;
+    addCodigo();
+  } else if (scannerMode === 'prod') {
+    // Poner en el campo de código del modal de producto
+    const inp = document.getElementById('ap_cod');
+    inp.value = cod;
+    inp.style.borderColor = 'var(--teal)';
+    inp.focus();
+    toast('✓ Código escaneado: ' + cod);
+  }
+}
+
+/* ── Input manual dentro del scanner ── */
+function usarCodigoManualScanner() {
+  const val = document.getElementById('scannerManualInput').value.trim();
+  if (!val) return;
+  cerrarScanner();
+  usarCodigo(val);
+}
+
+/* ── Cerrar escáner ── */
+function cerrarScanner() {
+  scannerActive = false;
+  if (scannerRAF) { cancelAnimationFrame(scannerRAF); scannerRAF = null; }
+  if (scannerStream) {
+    scannerStream.getTracks().forEach(t => t.stop());
+    scannerStream = null;
+  }
+  const video = document.getElementById('scannerVideo');
+  video.srcObject = null;
+  linternaOn = false;
+  cm('mScanner');
+}
+
+/* ── Linterna ── */
+async function toggleLinterna() {
+  if (!scannerStream) return;
+  const track = scannerStream.getVideoTracks()[0];
+  if (!track) return;
+  try {
+    const caps = track.getCapabilities ? track.getCapabilities() : {};
+    if (!caps.torch) { toast('⚠ Este dispositivo no tiene linterna'); return; }
+    linternaOn = !linternaOn;
+    await track.applyConstraints({ advanced: [{ torch: linternaOn }] });
+    document.getElementById('btnLinterna').textContent = linternaOn ? '🔦 Apagar' : '🔦 Linterna';
+  } catch(e) {
+    toast('⚠ No se pudo controlar la linterna');
+  }
+}
+
+// Cerrar si click fuera del modal
+document.getElementById('mScanner').addEventListener('click', function(e) {
+  if (e.target === this) cerrarScanner();
+});
+</script>
