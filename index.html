@@ -1206,7 +1206,7 @@ body {
             <div class="quick-section">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
                 <div class="qs-label" style="margin:0">Acceso rápido</div>
-                <button class="btn btn-outline" onclick="openSim()" title="Simulador" style="padding:7px 12px">📷</button>
+                <button class="btn btn-outline" onclick="abrirScanner('pos')" title="Escanear código de barras" style="padding:7px 12px">📷</button>
               </div>
               <div class="quick-pills" id="qprods"></div>
             </div>
@@ -2378,42 +2378,50 @@ setPeriodoBtns();
 
 <script>
 /* ══════════════════════════════════════════
-   ESCÁNER REAL DE CÁMARA — ZXing
-   Funciona en iPhone (Safari), Android (Chrome)
-   y cualquier navegador moderno.
-   Lee EAN-13, EAN-8, UPC-A, Code-128, QR y más.
+   ESCÁNER REAL DE CÁMARA
+   Estrategia por capas:
+   1. BarcodeDetector nativo (Chrome Android, Chrome Desktop)
+   2. Quagga2 (iPhone Safari, Firefox, cualquier navegador)
+   3. Input manual siempre visible como fallback
 ══════════════════════════════════════════ */
 
-let scannerMode  = 'pos';   // 'pos' | 'prod'
-let linternaOn   = false;
-let zxingReader  = null;    // instancia de ZXing activa
-let zxingStream  = null;    // stream de cámara activo
+let scannerMode   = 'pos';
+let linternaOn    = false;
+let scannerStream = null;
+let scannerRAF    = null;
+let scannerActivo = false;
+let yaDetecto     = false;  // evitar detecciones múltiples
 
-/* ── Normalizar código: quitar ceros iniciales y no-dígitos ── */
+/* ── Normalizar código ── */
 function normCod(c) {
   const d = String(c).replace(/\D/g, '');
   return d.replace(/^0+/, '') || d;
 }
 
-/* ── Cargar ZXing una sola vez ── */
-function cargarZXing(cb) {
-  if (window.ZXingBrowser) { cb(); return; }
+/* ── Cargar Quagga2 una sola vez ── */
+function cargarQuagga(cb) {
+  if (window.Quagga) { cb(); return; }
   const s = document.createElement('script');
-  s.src = 'https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js';
-  s.onload  = cb;
+  s.src = 'https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js';
+  s.onload = cb;
   s.onerror = () => {
-    document.getElementById('scannerMsg').textContent =
-      'Error cargando el escáner. Usa el campo manual abajo.';
+    setMsg('⚠ No se pudo cargar el escáner. Escribe el código abajo.');
   };
   document.head.appendChild(s);
 }
 
+/* ── Helper: mostrar mensaje en el escáner ── */
+function setMsg(txt) {
+  const el = document.getElementById('scannerMsg');
+  if (el) el.textContent = txt;
+}
+
 function abrirScanner(modo) {
   scannerMode = modo;
+  yaDetecto   = false;
   document.getElementById('scannerTitle').textContent =
-    modo === 'pos' ? 'Escanear producto' : 'Escanear código del producto';
-  document.getElementById('scannerMsg').textContent =
-    'Cargando escáner...';
+    modo === 'pos' ? 'Escanear producto para vender' : 'Escanear código del producto';
+  setMsg('Iniciando cámara...');
   document.getElementById('scannerManualInput').value = '';
   document.getElementById('btnLinterna').textContent = '🔦 Linterna';
   linternaOn = false;
@@ -2421,93 +2429,144 @@ function abrirScanner(modo) {
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     om('mScanner');
     document.getElementById('scannerVideo').style.display = 'none';
-    document.getElementById('scannerMsg').textContent =
-      '⚠ Cámara no disponible — escribe el código abajo';
+    setMsg('⚠ Cámara no disponible — escribe el código abajo');
     return;
   }
 
   om('mScanner');
-  cargarZXing(iniciarZXing);
+  iniciarCamara();
 }
 
-function iniciarZXing() {
-  const video = document.getElementById('scannerVideo');
-  video.style.display = 'block';
-
+async function iniciarCamara() {
   try {
-    // BrowserMultiFormatReader detecta EAN-13, EAN-8, UPC, Code-128, QR, etc.
-    zxingReader = new ZXingBrowser.BrowserMultiFormatReader(null, {
-      delayBetweenScanAttempts: 150,
-      delayBetweenScanSuccess: 500,
-    });
-
-    zxingReader.decodeFromConstraints(
-      {
-        video: {
-          facingMode: { ideal: 'environment' },
-          width:  { ideal: 1280 },
-          height: { ideal: 720 },
-        }
+    scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width:  { ideal: 1280 },
+        height: { ideal: 720 }
       },
-      video,
-      (result, err, controls) => {
-        // Guardar el stream para la linterna
-        if (!zxingStream && video.srcObject) zxingStream = video.srcObject;
-
-        if (result) {
-          manejarCodigoEscaneado(result.getText());
-        }
-        // Los errores de "no encontrado" son normales, ZXing los lanza cada frame
-        // Solo mostramos errores reales de cámara
-        if (err && !(err instanceof ZXingBrowser.NotFoundException)) {
-          let msg = 'No se pudo acceder a la cámara.';
-          if (err.name === 'NotAllowedError')
-            msg = 'Permiso de cámara denegado. Ve a Ajustes y permite el acceso.';
-          if (err.name === 'NotFoundError')
-            msg = 'No se encontró ninguna cámara.';
-          if (err.name === 'NotReadableError')
-            msg = 'La cámara está en uso por otra app.';
-          document.getElementById('scannerMsg').textContent = '⚠ ' + msg;
-        }
-      }
-    ).then(controls => {
-      document.getElementById('scannerMsg').textContent =
-        'Apunta la cámara al código de barras';
-    }).catch(err => {
-      let msg = 'No se pudo iniciar la cámara.';
-      if (err.name === 'NotAllowedError')
-        msg = 'Permiso de cámara denegado. Ve a Ajustes y permite el acceso.';
-      document.getElementById('scannerMsg').textContent = '⚠ ' + msg;
-      toast('❌ ' + msg, 4000);
+      audio: false
     });
 
-  } catch(e) {
-    document.getElementById('scannerMsg').textContent =
-      '⚠ Error iniciando escáner. Usa el campo manual.';
+    const video = document.getElementById('scannerVideo');
+    video.style.display = 'block';
+    video.srcObject = scannerStream;
+
+    // iPhone necesita que el video esté en el DOM antes de play()
+    await new Promise(r => { video.onloadedmetadata = r; });
+    await video.play();
+
+    scannerActivo = true;
+    setMsg('Apunta al código de barras');
+
+    // Elegir motor de detección
+    if ('BarcodeDetector' in window) {
+      usarBarcodeDetector(video);
+    } else {
+      cargarQuagga(() => usarQuagga(video));
+    }
+
+  } catch(err) {
+    let msg = '⚠ No se pudo acceder a la cámara.';
+    if (err.name === 'NotAllowedError')  msg = '⚠ Permiso denegado — ve a Ajustes y activa la cámara para este sitio.';
+    if (err.name === 'NotFoundError')    msg = '⚠ No se encontró cámara en este dispositivo.';
+    if (err.name === 'NotReadableError') msg = '⚠ La cámara está en uso por otra app. Ciérrala e intenta de nuevo.';
+    setMsg(msg);
   }
+}
+
+/* ── Motor 1: BarcodeDetector nativo (Chrome Android, Chrome Desktop, Edge) ── */
+async function usarBarcodeDetector(video) {
+  let formatos;
+  try {
+    formatos = await BarcodeDetector.getSupportedFormats();
+  } catch(e) {
+    formatos = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code'];
+  }
+  const detector = new BarcodeDetector({ formats: formatos });
+
+  async function loop() {
+    if (!scannerActivo || yaDetecto) return;
+    try {
+      const codigos = await detector.detect(video);
+      if (codigos.length > 0) {
+        manejarCodigoEscaneado(codigos[0].rawValue);
+        return;
+      }
+    } catch(e) {}
+    scannerRAF = requestAnimationFrame(loop);
+  }
+  loop();
+}
+
+/* ── Motor 2: Quagga2 (iPhone Safari, Firefox) ── */
+function usarQuagga(video) {
+  const canvas = document.getElementById('scannerCanvas');
+  const ctx    = canvas.getContext('2d', { willReadFrequently: true });
+
+  function loopQuagga() {
+    if (!scannerActivo || yaDetecto) return;
+    if (video.readyState >= 2 && video.videoWidth > 0) {
+      canvas.width  = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0);
+
+      // Recortar zona central para mejorar velocidad
+      const cx = Math.floor(canvas.width  * 0.1);
+      const cy = Math.floor(canvas.height * 0.25);
+      const cw = Math.floor(canvas.width  * 0.8);
+      const ch = Math.floor(canvas.height * 0.5);
+      const imageData = ctx.getImageData(cx, cy, cw, ch);
+
+      Quagga.decodeSingle({
+        decoder: {
+          readers: ['ean_reader','ean_8_reader','upc_reader','upc_e_reader',
+                    'code_128_reader','code_39_reader','code_93_reader']
+        },
+        locate: true,
+        src: null,
+        image: { data: imageData.data, width: cw, height: ch }
+      }, function(result) {
+        if (result && result.codeResult && result.codeResult.code) {
+          manejarCodigoEscaneado(result.codeResult.code);
+        } else {
+          scannerRAF = requestAnimationFrame(loopQuagga);
+        }
+      });
+    } else {
+      scannerRAF = requestAnimationFrame(loopQuagga);
+    }
+  }
+  loopQuagga();
 }
 
 /* ── Cuando se detecta un código ── */
 function manejarCodigoEscaneado(codigo) {
-  // Vibrar si está disponible
-  if (navigator.vibrate) navigator.vibrate(80);
+  if (yaDetecto) return;
+  yaDetecto = true;
+  scannerActivo = false;
+  if (scannerRAF) { cancelAnimationFrame(scannerRAF); scannerRAF = null; }
 
-  // Feedback visual
-  document.getElementById('scanFrame').style.borderColor = '#56d364';
-  document.getElementById('scannerMsg').textContent = '✓ Código detectado: ' + codigo;
+  if (navigator.vibrate) navigator.vibrate(100);
+
+  const frame = document.getElementById('scanFrame');
+  if (frame) {
+    frame.style.outline = '3px solid #56d364';
+  }
+  setMsg('✓ Detectado: ' + codigo);
 
   setTimeout(() => {
     cerrarScanner();
     usarCodigo(codigo);
-  }, 400);
+  }, 500);
 }
 
-/* ── Usar el código según el modo ── */
+/* ── Usar el código según modo ── */
 function usarCodigo(codigo) {
   const cod = normCod(codigo);
   if (scannerMode === 'pos') {
-    const inp = document.getElementById('codigoInput');
-    inp.value = cod;
+    // Poner en input oculto y disparar addCodigo
+    document.getElementById('codigoInput').value = cod;
     addCodigo();
   } else if (scannerMode === 'prod') {
     const inp = document.getElementById('ap_cod');
@@ -2526,32 +2585,35 @@ function usarCodigoManualScanner() {
   usarCodigo(val);
 }
 
-/* ── Cerrar escáner ── */
+/* ── Cerrar y limpiar todo ── */
 function cerrarScanner() {
-  try {
-    if (zxingReader) { zxingReader.reset(); zxingReader = null; }
-  } catch(e) {}
-  try {
-    if (zxingStream) {
-      zxingStream.getTracks().forEach(t => t.stop());
-      zxingStream = null;
-    }
-  } catch(e) {}
+  scannerActivo = false;
+  yaDetecto     = false;
+  if (scannerRAF) { cancelAnimationFrame(scannerRAF); scannerRAF = null; }
+
+  // Detener Quagga si estaba corriendo
+  try { Quagga.stop(); } catch(e) {}
+
+  // Apagar cámara
+  if (scannerStream) {
+    scannerStream.getTracks().forEach(t => t.stop());
+    scannerStream = null;
+  }
   const video = document.getElementById('scannerVideo');
-  if (video) video.srcObject = null;
+  if (video) { video.srcObject = null; video.load(); }
+
   linternaOn = false;
   cm('mScanner');
 }
 
 /* ── Linterna ── */
 async function toggleLinterna() {
-  const stream = zxingStream || (document.getElementById('scannerVideo').srcObject);
-  if (!stream) return;
-  const track = stream.getVideoTracks()[0];
+  if (!scannerStream) return;
+  const track = scannerStream.getVideoTracks()[0];
   if (!track) return;
   try {
     const caps = track.getCapabilities ? track.getCapabilities() : {};
-    if (!caps.torch) { toast('⚠ Este dispositivo no tiene linterna'); return; }
+    if (!caps.torch) { toast('⚠ Sin linterna disponible'); return; }
     linternaOn = !linternaOn;
     await track.applyConstraints({ advanced: [{ torch: linternaOn }] });
     document.getElementById('btnLinterna').textContent = linternaOn ? '🔦 Apagar' : '🔦 Linterna';
@@ -2560,7 +2622,6 @@ async function toggleLinterna() {
   }
 }
 
-// Cerrar si click fuera del modal
 document.getElementById('mScanner').addEventListener('click', function(e) {
   if (e.target === this) cerrarScanner();
 });
