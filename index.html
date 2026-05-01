@@ -1145,23 +1145,23 @@ body {
 <aside class="sidebar">
   <div class="sb-logo">AT</div>
   <nav class="sb-nav">
-    <button class="sb-btn active" onclick="tab('pos',this)" title="Ventas">
+    <button class="sb-btn active" onclick="tab('pos',this)" title="Punto de Venta">
       <span class="sb-icon">⚡</span>
-      <span class="sb-lbl">Ventas</span>
+      <span class="sb-lbl">Venta</span>
     </button>
     <button class="sb-btn" onclick="tab('inv',this)" title="Inventario">
       <span class="sb-icon">📦</span>
-      <span class="sb-lbl">inv</span>
+      <span class="sb-lbl">Stock</span>
     </button>
-    <button class="sb-btn" onclick="tab('art',this)" title="Snacks">
+    <button class="sb-btn" onclick="tab('art',this)" title="Artesanales">
       <span class="sb-icon">🍨</span>
-      <span class="sb-lbl">snacks.</span>
+      <span class="sb-lbl">Arte.</span>
     </button>
     <button class="sb-btn" onclick="tab('hist',this)" title="Historial">
       <span class="sb-icon">📋</span>
       <span class="sb-lbl">Hist.</span>
     </button>
-    <button class="sb-btn" onclick="tab('costos',this)" title="Costos & PEPS">
+    <button class="sb-btn" onclick="tab('costos',this)" title="Costos & PE">
       <span class="sb-icon">🧮</span>
       <span class="sb-lbl">Costos</span>
     </button>
@@ -1195,7 +1195,7 @@ body {
         <div class="pos-left">
           <div class="pg-hdr">
             <div>
-              <div class="pg-title"><em>Ventas</em></div>
+              <div class="pg-title">Punto de <em>Venta</em></div>
 
             </div>
           </div>
@@ -1309,7 +1309,7 @@ body {
       <div class="full-panel">
         <div class="sec-hdr">
           <div>
-            <div class="sec-title">Snacks<em> y postres</em></div>
+            <div class="sec-title">Arte<em>sanales</em></div>
             <div class="sec-sub">// paletas · gelatinas · helados · receta de costos</div>
           </div>
           <button class="btn btn-p" onclick="openAddArt()">+ Agregar</button>
@@ -1381,9 +1381,9 @@ body {
             <div id="crtBox"></div>
             <div class="pe-box mt12" id="peBox"></div>
             <div class="cfg-block mt12">
-              <div class="cfg-head">🍨 CIF distribuido — solo snacks y postres</div>
+              <div class="cfg-head">🍨 CIF distribuido — solo artesanales</div>
               <div style="padding:14px 16px">
-                <div class="sm c-gray mb12">Distribución del CIF entre productos snacks y postres según su peso en el costo total</div>
+                <div class="sm c-gray mb12">Distribución del CIF entre productos artesanales según su peso en el costo total</div>
                 <div class="cif-art-grid" id="cifArtGrid"></div>
               </div>
             </div>
@@ -1458,7 +1458,7 @@ body {
         <div class="fld"><label class="lbl">Stock inicial</label><input class="inp" id="ap_st" type="number" placeholder="0"></div>
       </div>
       <div id="pvPrevEl" class="alt alt-info" style="display:none"></div>
-      <button class="btn btn-p btn-full btn-lg mt12" onclick="saveProd()">Guardar producto</button>
+      <button id="btnGuardarProd" class="btn btn-p btn-full btn-lg mt12" onclick="saveProd()">Guardar producto</button>
     </div>
   </div>
 </div>
@@ -1606,26 +1606,58 @@ function toast(msg,d=2500){
 function addCodigo(){
   const inp=document.getElementById('codigoInput');
   const raw=inp.value.trim();
-  const cod=raw.replace(/\D/g,'')||raw;
+  const cod=normCod(raw)||raw;
   if(!cod){toast('⚠ Ingresa un código');return;}
   inp.value='';
-  let p=prods.find(x=>x.codigoBarras===cod||x.codigoBarras.replace(/\D/g,'')===cod);
-  if(p){p.stock<=0?toast('✕ Sin stock: '+p.nombre,3000):addCart(p);return;}
-  const loc=DB0.find(x=>x.codigoBarras.replace(/\D/g,'')===cod);
-  if(loc){addCart({...loc,id:uid()});return;}
-  toast('🔍 Buscando en línea...');
-  fetch(`https://world.openfoodfacts.org/api/v0/product/${cod}.json`)
-    .then(r=>r.json()).then(data=>{
-      if(data.product?.product_name){
-        const nm=data.product.product_name.slice(0,30);
-        const cat=(data.product.categories||'General').split(',')[0].trim();
-        const prov=data.product.brands||'Desconocido';
-        const pv=+(Math.random()*35+15).toFixed(2);
-        const pc=+(pv*(Math.random()*.2+.5)).toFixed(2);
-        const np={id:uid(),nombre:nm,categoria:cat,precioVenta:pv,precioCompra:pc,proveedor:prov,codigoBarras:cod,stock:10,esArtesanal:false,insumos:[],fechaRegistro:new Date().toISOString()};
-        prods.push(np);save();addCart(np);
-      }else toast('✕ No encontrado: '+cod,3500);
-    }).catch(()=>toast('✕ Sin conexión',3000));
+
+  // 1. Buscar en inventario propio
+  let p=prods.find(x=>normCod(x.codigoBarras)===cod);
+  if(p){
+    if(p.stock<=0){toast('✕ Sin stock: '+p.nombre,3000);return;}
+    addCart(p);return;
+  }
+
+  // 2. Buscar en base de datos local predefinida
+  const loc=DB0.find(x=>normCod(x.codigoBarras)===cod);
+  if(loc){
+    // Guardarlo en el inventario propio y agregar al carrito
+    const nuevo={...loc,id:uid()};
+    prods.push(nuevo);save();
+    addCart(nuevo);return;
+  }
+
+  // 3. Producto NO encontrado en ninguna base de datos:
+  //    Abrir formulario de nuevo producto con el código ya llenado
+  //    para que el usuario lo registre en ese momento
+  toast('📋 Producto nuevo — regístralo para continuar', 3500);
+  abrirRegistroRapido(cod);
+}
+
+/* ── Registro rápido desde el escáner de venta ── */
+function abrirRegistroRapido(cod) {
+  // Limpiar formulario
+  ['ap_n','ap_c','ap_pr','ap_pv','ap_pc','ap_st'].forEach(id=>{
+    document.getElementById(id).value='';
+  });
+  // Poner el código escaneado
+  document.getElementById('ap_cod').value = cod;
+  document.getElementById('pvPrevEl').style.display='none';
+
+  // Cambiar el título y botón del modal para indicar contexto de venta
+  document.querySelector('#mAddProd .mtitle').textContent = '📋 Registrar producto nuevo';
+  document.getElementById('btnGuardarProd').textContent = '💾 Guardar y agregar al carrito';
+
+  // Marcar que viene del POS para que al guardar también agregue al carrito
+  document.getElementById('btnGuardarProd').dataset.modoVenta = 'true';
+
+  // Resaltar el campo de código para que el usuario vea que ya está llenado
+  const codInp = document.getElementById('ap_cod');
+  codInp.style.borderColor = 'var(--teal)';
+  codInp.style.boxShadow = '0 0 0 3px rgba(13,207,176,.2)';
+
+  om('mAddProd');
+  // Enfocar el campo nombre para que empiece a escribir
+  setTimeout(()=>document.getElementById('ap_n').focus(), 300);
 }
 
 function addCart(p){
@@ -1831,7 +1863,15 @@ function editStock(id){
 }
 function openAddProd(){
   ['ap_n','ap_c','ap_pr','ap_pv','ap_pc','ap_cod','ap_st'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('pvPrevEl').style.display='none';om('mAddProd');
+  document.getElementById('pvPrevEl').style.display='none';
+  // Resetear a modo normal (no venta)
+  const btn=document.getElementById('btnGuardarProd');
+  btn.textContent='Guardar producto';
+  btn.dataset.modoVenta='false';
+  document.querySelector('#mAddProd .mtitle').textContent='Nuevo Producto';
+  const codInp=document.getElementById('ap_cod');
+  codInp.style.borderColor='';codInp.style.boxShadow='';
+  om('mAddProd');
 }
 function pvPrev(){
   const pv=parseFloat(document.getElementById('ap_pv').value);
@@ -1852,8 +1892,33 @@ function saveProd(){
   const cod=document.getElementById('ap_cod').value.trim();
   const st=parseInt(document.getElementById('ap_st').value)||0;
   if(!n||!c||isNaN(pv)||isNaN(pc)||!cod){toast('✕ Completa los campos obligatorios');return;}
-  prods.push({id:uid(),nombre:n,categoria:c,proveedor:pr,precioVenta:pv,precioCompra:pc,codigoBarras:cod,stock:st,esArtesanal:false,insumos:[],fechaRegistro:new Date().toISOString()});
-  save();renderInv();renderQProds();cm('mAddProd');toast('✓ Producto guardado: '+n);
+
+  const nuevo={id:uid(),nombre:n,categoria:c,proveedor:pr,precioVenta:pv,precioCompra:pc,
+    codigoBarras:cod,stock:st,esArtesanal:false,insumos:[],fechaRegistro:new Date().toISOString()};
+  prods.push(nuevo);
+  save();renderInv();renderQProds();
+
+  // Si venía del escáner de venta, agregar directo al carrito
+  const btn=document.getElementById('btnGuardarProd');
+  const modoVenta=btn.dataset.modoVenta==='true';
+  if(modoVenta){
+    btn.dataset.modoVenta='false';
+    btn.textContent='Guardar producto';
+    document.querySelector('#mAddProd .mtitle').textContent='Nuevo Producto';
+    cm('mAddProd');
+    // Agregar al carrito con stock temporal de 1
+    const paraCarrito={...nuevo,stock:1};
+    addCart(paraCarrito);
+    toast('✓ '+n+' guardado y agregado al carrito');
+  }else{
+    cm('mAddProd');
+    toast('✓ Producto guardado: '+n);
+  }
+
+  // Resetear estilo del campo código
+  const codInp=document.getElementById('ap_cod');
+  codInp.style.borderColor='';
+  codInp.style.boxShadow='';
 }
 
 // ══════════════════════════════════════════
@@ -2313,149 +2378,117 @@ setPeriodoBtns();
 
 <script>
 /* ══════════════════════════════════════════
-   ESCÁNER REAL DE CÁMARA
-   Usa BarcodeDetector API (Chrome/Android/Safari 17+)
-   Con fallback a jsQR para navegadores sin soporte
+   ESCÁNER REAL DE CÁMARA — ZXing
+   Funciona en iPhone (Safari), Android (Chrome)
+   y cualquier navegador moderno.
+   Lee EAN-13, EAN-8, UPC-A, Code-128, QR y más.
 ══════════════════════════════════════════ */
 
-let scannerStream = null;
-let scannerMode   = 'pos';   // 'pos' | 'prod'
-let scannerActive = false;
-let scannerRAF    = null;
-let linternaOn    = false;
-let jsQRLoaded    = false;
+let scannerMode  = 'pos';   // 'pos' | 'prod'
+let linternaOn   = false;
+let zxingReader  = null;    // instancia de ZXing activa
+let zxingStream  = null;    // stream de cámara activo
 
-// Cargar jsQR como fallback (solo si BarcodeDetector no existe)
-function cargarJsQR(cb) {
-  if (window.jsQR) { cb(); return; }
+/* ── Normalizar código: quitar ceros iniciales y no-dígitos ── */
+function normCod(c) {
+  const d = String(c).replace(/\D/g, '');
+  return d.replace(/^0+/, '') || d;
+}
+
+/* ── Cargar ZXing una sola vez ── */
+function cargarZXing(cb) {
+  if (window.ZXingBrowser) { cb(); return; }
   const s = document.createElement('script');
-  s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
-  s.onload = () => { jsQRLoaded = true; cb(); };
-  s.onerror = () => cb(); // sin fallback, igual intentamos
+  s.src = 'https://unpkg.com/@zxing/browser@0.1.5/umd/index.min.js';
+  s.onload  = cb;
+  s.onerror = () => {
+    document.getElementById('scannerMsg').textContent =
+      'Error cargando el escáner. Usa el campo manual abajo.';
+  };
   document.head.appendChild(s);
 }
 
 function abrirScanner(modo) {
   scannerMode = modo;
-  const titulo = modo === 'pos'
-    ? 'Escanear para agregar al carrito'
-    : 'Escanear código del producto';
-  document.getElementById('scannerTitle').textContent = titulo;
-  document.getElementById('scannerMsg').textContent = 'Apunta la cámara al código de barras';
+  document.getElementById('scannerTitle').textContent =
+    modo === 'pos' ? 'Escanear producto' : 'Escanear código del producto';
+  document.getElementById('scannerMsg').textContent =
+    'Cargando escáner...';
   document.getElementById('scannerManualInput').value = '';
   document.getElementById('btnLinterna').textContent = '🔦 Linterna';
   linternaOn = false;
 
-  // Comprobar soporte de cámara
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    toast('❌ Tu navegador no soporta la cámara. Escribe el código manualmente.', 4000);
-    // Abrir el modal igual para que puedan escribir manualmente
     om('mScanner');
     document.getElementById('scannerVideo').style.display = 'none';
-    document.getElementById('scannerMsg').textContent = '⚠ Cámara no disponible — escribe el código abajo';
+    document.getElementById('scannerMsg').textContent =
+      '⚠ Cámara no disponible — escribe el código abajo';
     return;
   }
 
   om('mScanner');
-  iniciarCamara();
+  cargarZXing(iniciarZXing);
 }
 
-async function iniciarCamara() {
+function iniciarZXing() {
+  const video = document.getElementById('scannerVideo');
+  video.style.display = 'block';
+
   try {
-    // Pedir cámara trasera preferentemente
-    scannerStream = await navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: { ideal: 'environment' },
-        width:  { ideal: 1280 },
-        height: { ideal: 720 }
-      },
-      audio: false
+    // BrowserMultiFormatReader detecta EAN-13, EAN-8, UPC, Code-128, QR, etc.
+    zxingReader = new ZXingBrowser.BrowserMultiFormatReader(null, {
+      delayBetweenScanAttempts: 150,
+      delayBetweenScanSuccess: 500,
     });
 
-    const video = document.getElementById('scannerVideo');
-    video.style.display = 'block';
-    video.srcObject = scannerStream;
-    await video.play();
-    scannerActive = true;
+    zxingReader.decodeFromConstraints(
+      {
+        video: {
+          facingMode: { ideal: 'environment' },
+          width:  { ideal: 1280 },
+          height: { ideal: 720 },
+        }
+      },
+      video,
+      (result, err, controls) => {
+        // Guardar el stream para la linterna
+        if (!zxingStream && video.srcObject) zxingStream = video.srcObject;
 
-    // Intentar BarcodeDetector primero, si no, jsQR
-    if ('BarcodeDetector' in window) {
-      iniciarBarcodeDetector();
-    } else {
-      cargarJsQR(iniciarJsQR);
-    }
-
-  } catch (err) {
-    let msg = '❌ No se pudo acceder a la cámara.';
-    if (err.name === 'NotAllowedError')  msg = '❌ Permiso de cámara denegado. Permite el acceso e intenta de nuevo.';
-    if (err.name === 'NotFoundError')    msg = '❌ No se encontró ninguna cámara.';
-    if (err.name === 'NotReadableError') msg = '❌ La cámara está en uso por otra app.';
-    document.getElementById('scannerMsg').textContent = msg.replace('❌ ','');
-    toast(msg, 4000);
-  }
-}
-
-/* ── BarcodeDetector (nativo) ── */
-async function iniciarBarcodeDetector() {
-  const formatos = [
-    'ean_13','ean_8','upc_a','upc_e',
-    'code_128','code_39','code_93',
-    'qr_code','pdf417','data_matrix',
-    'itf','aztec','codabar'
-  ];
-  const detector = new BarcodeDetector({ formats: formatos });
-  const video    = document.getElementById('scannerVideo');
-
-  async function detectar() {
-    if (!scannerActive) return;
-    try {
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
-        const codigos = await detector.detect(video);
-        if (codigos.length > 0) {
-          const codigo = codigos[0].rawValue;
-          manejarCodigoEscaneado(codigo);
-          return; // detener loop
+        if (result) {
+          manejarCodigoEscaneado(result.getText());
+        }
+        // Los errores de "no encontrado" son normales, ZXing los lanza cada frame
+        // Solo mostramos errores reales de cámara
+        if (err && !(err instanceof ZXingBrowser.NotFoundException)) {
+          let msg = 'No se pudo acceder a la cámara.';
+          if (err.name === 'NotAllowedError')
+            msg = 'Permiso de cámara denegado. Ve a Ajustes y permite el acceso.';
+          if (err.name === 'NotFoundError')
+            msg = 'No se encontró ninguna cámara.';
+          if (err.name === 'NotReadableError')
+            msg = 'La cámara está en uso por otra app.';
+          document.getElementById('scannerMsg').textContent = '⚠ ' + msg;
         }
       }
-    } catch (e) { /* continuar */ }
-    scannerRAF = requestAnimationFrame(detectar);
-  }
-  detectar();
-}
+    ).then(controls => {
+      document.getElementById('scannerMsg').textContent =
+        'Apunta la cámara al código de barras';
+    }).catch(err => {
+      let msg = 'No se pudo iniciar la cámara.';
+      if (err.name === 'NotAllowedError')
+        msg = 'Permiso de cámara denegado. Ve a Ajustes y permite el acceso.';
+      document.getElementById('scannerMsg').textContent = '⚠ ' + msg;
+      toast('❌ ' + msg, 4000);
+    });
 
-/* ── jsQR (fallback) ── */
-function iniciarJsQR() {
-  const video  = document.getElementById('scannerVideo');
-  const canvas = document.getElementById('scannerCanvas');
-  const ctx    = canvas.getContext('2d');
-
-  function detectar() {
-    if (!scannerActive) return;
-    if (video.readyState === video.HAVE_ENOUGH_DATA) {
-      canvas.width  = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      if (window.jsQR) {
-        const code = jsQR(img.data, img.width, img.height, {
-          inversionAttempts: 'dontInvert'
-        });
-        if (code && code.data) {
-          manejarCodigoEscaneado(code.data);
-          return;
-        }
-      }
-    }
-    scannerRAF = requestAnimationFrame(detectar);
+  } catch(e) {
+    document.getElementById('scannerMsg').textContent =
+      '⚠ Error iniciando escáner. Usa el campo manual.';
   }
-  detectar();
 }
 
 /* ── Cuando se detecta un código ── */
 function manejarCodigoEscaneado(codigo) {
-  scannerActive = false;
-  if (scannerRAF) { cancelAnimationFrame(scannerRAF); scannerRAF = null; }
-
   // Vibrar si está disponible
   if (navigator.vibrate) navigator.vibrate(80);
 
@@ -2471,14 +2504,12 @@ function manejarCodigoEscaneado(codigo) {
 
 /* ── Usar el código según el modo ── */
 function usarCodigo(codigo) {
-  const cod = codigo.replace(/\D/g, '') || codigo;
+  const cod = normCod(codigo);
   if (scannerMode === 'pos') {
-    // Poner en el input del POS y agregar
     const inp = document.getElementById('codigoInput');
     inp.value = cod;
     addCodigo();
   } else if (scannerMode === 'prod') {
-    // Poner en el campo de código del modal de producto
     const inp = document.getElementById('ap_cod');
     inp.value = cod;
     inp.style.borderColor = 'var(--teal)';
@@ -2497,22 +2528,26 @@ function usarCodigoManualScanner() {
 
 /* ── Cerrar escáner ── */
 function cerrarScanner() {
-  scannerActive = false;
-  if (scannerRAF) { cancelAnimationFrame(scannerRAF); scannerRAF = null; }
-  if (scannerStream) {
-    scannerStream.getTracks().forEach(t => t.stop());
-    scannerStream = null;
-  }
+  try {
+    if (zxingReader) { zxingReader.reset(); zxingReader = null; }
+  } catch(e) {}
+  try {
+    if (zxingStream) {
+      zxingStream.getTracks().forEach(t => t.stop());
+      zxingStream = null;
+    }
+  } catch(e) {}
   const video = document.getElementById('scannerVideo');
-  video.srcObject = null;
+  if (video) video.srcObject = null;
   linternaOn = false;
   cm('mScanner');
 }
 
 /* ── Linterna ── */
 async function toggleLinterna() {
-  if (!scannerStream) return;
-  const track = scannerStream.getVideoTracks()[0];
+  const stream = zxingStream || (document.getElementById('scannerVideo').srcObject);
+  if (!stream) return;
+  const track = stream.getVideoTracks()[0];
   if (!track) return;
   try {
     const caps = track.getCapabilities ? track.getCapabilities() : {};
