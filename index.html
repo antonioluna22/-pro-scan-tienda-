@@ -1530,7 +1530,7 @@ body {
         <div class="fld"><label class="lbl">Precio Compra *</label><input class="inp" id="ap_pc" type="number" step="0.01" placeholder="0.00" oninput="pvPrev()"></div>
       </div>
       <div class="g2">
-        <div class="fld"><label class="lbl">Código de Barras *</label><div style="display:flex;gap:6px"><input class="inp mono" id="ap_cod" placeholder="7501055300008" style="flex:1"><button class="btn btn-outline" onclick="abrirScanner('prod')" style="padding:9px 13px;flex-shrink:0" title="Escanear código">📷</button></div></div>
+        <div class="fld"><label class="lbl">Código de Barras *</label><input class="inp mono" id="ap_cod" placeholder="7501055300008"></div>
         <div class="fld"><label class="lbl">Stock inicial</label><input class="inp" id="ap_st" type="number" placeholder="0"></div>
       </div>
       <div id="pvPrevEl" class="alt alt-info" style="display:none"></div>
@@ -2653,211 +2653,319 @@ function mostrarResultado(msg, tipo) {
 </body>
 </html>
 
-<!-- ══ ESCÁNER: input de cámara nativo (funciona en file:// iPhone y Android) ══ -->
-<!-- Input oculto que abre la cámara nativa del dispositivo -->
-<input type="file" id="scannerFileInput" accept="image/*" capture="environment"
-  style="display:none" onchange="procesarFotoEscaner(this)">
+<!-- ══ MODAL ESCÁNER — VIDEO STREAM REAL ══ -->
+<!-- 
+  Estrategia: crear un blob URL con una mini-página de escáner
+  que corre en su propio origen y puede acceder a getUserMedia
+  incluso en file://. Se comunica con la app via postMessage.
+-->
+<div class="moverlay" id="mScanner" style="z-index:600;padding:0;align-items:stretch;background:#000">
+  <div style="width:100%;height:100%;display:flex;flex-direction:column;position:relative">
 
-<!-- Modal resultado escáner -->
-<div class="moverlay" id="mScanner" style="z-index:600">
-  <div class="modal" style="max-width:380px;text-align:center">
-    <div class="mhdr">
-      <div class="mtitle">📷 Escáner</div>
-      <button class="mclose" onclick="cerrarScanner()">✕</button>
-    </div>
-    <div class="mbody">
-      <!-- Estado del escáner -->
-      <div id="scannerEstado" style="margin-bottom:18px">
-        <div id="scannerIcono" style="font-size:3rem;margin-bottom:10px">📷</div>
-        <div id="scannerMsg" style="font-size:.85rem;color:var(--tx2);line-height:1.5"></div>
+    <!-- Header -->
+    <div style="position:absolute;top:0;left:0;right:0;z-index:30;
+      background:linear-gradient(180deg,rgba(0,0,0,.85) 0%,transparent 100%);
+      padding:14px 18px 40px;display:flex;align-items:center;justify-content:space-between">
+      <div style="font-family:'Fira Code',monospace;font-size:.78rem;color:rgba(255,255,255,.85)">
+        📷 <span id="scannerTitle">Escanear producto</span>
       </div>
-
-      <!-- Preview de la foto tomada -->
-      <img id="scannerPreview" style="display:none;width:100%;border-radius:8px;margin-bottom:14px;border:1px solid var(--b1)">
-
-      <!-- Botón principal: abre cámara nativa -->
-      <button onclick="tomarFoto()" class="btn btn-p btn-full btn-lg" style="margin-bottom:10px">
-        📸 Tomar foto del código
+      <button onclick="cerrarScanner()" style="
+        background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);
+        color:#fff;border-radius:8px;padding:7px 16px;
+        font-family:'Familjen Grotesk',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer">
+        ✕ Cerrar
       </button>
+    </div>
 
-      <!-- Botón alternativo: elegir foto de galería -->
-      <button onclick="elegirDeGaleria()" class="btn btn-ghost btn-full" style="margin-bottom:14px">
-        🖼️ Elegir imagen de galería
-      </button>
+    <!-- Iframe con el escáner de video -->
+    <iframe id="scannerIframe"
+      style="width:100%;flex:1;border:none;background:#000"
+      allow="camera;microphone"
+      sandbox="allow-scripts allow-same-origin"
+    ></iframe>
 
-      <hr class="hr">
-
-      <!-- Input manual siempre visible -->
-      <div class="fld" style="margin-bottom:10px">
-        <label class="lbl">O escribe el código manualmente</label>
-        <div style="display:flex;gap:8px">
-          <input id="scannerManualInput" class="inp" placeholder="7501055300008"
-            style="font-family:'Fira Code',monospace;letter-spacing:1px"
-            onkeydown="if(event.key==='Enter')usarManual()">
-          <button class="btn btn-p" onclick="usarManual()" style="padding:9px 14px">OK</button>
-        </div>
+    <!-- Overlay inferior -->
+    <div style="position:absolute;bottom:0;left:0;right:0;z-index:30;
+      background:linear-gradient(0deg,rgba(0,0,0,.88) 0%,transparent 100%);
+      padding:36px 20px 22px;text-align:center">
+      <div id="scannerMsg" style="font-family:'Fira Code',monospace;font-size:.76rem;
+        color:rgba(255,255,255,.7);margin-bottom:14px;min-height:18px">
+        Cargando cámara...
+      </div>
+      <div style="display:flex;gap:8px;max-width:360px;margin:0 auto">
+        <input id="scannerManualInput" placeholder="O escribe el código aquí..."
+          style="flex:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);
+            border-radius:8px;color:#fff;padding:10px 13px;
+            font-family:'Fira Code',monospace;font-size:.84rem;outline:none"
+          onkeydown="if(event.key==='Enter')usarManual()">
+        <button onclick="usarManual()" style="
+          background:#1d6feb;border:none;color:#fff;border-radius:8px;
+          padding:10px 16px;font-family:'Familjen Grotesk',sans-serif;
+          font-weight:700;font-size:.84rem;cursor:pointer">OK</button>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Input oculto para foto (fallback si iframe no funciona) -->
+<input type="file" id="scannerFileInput" accept="image/*" capture="environment"
+  style="display:none" onchange="procesarFotoEscaner(this)">
+
 <script>
 /*
- * ESCÁNER — Basado en captura de foto nativa
- * ──────────────────────────────────────────
- * Usa <input type="file" capture="environment"> que funciona en:
- * - iPhone Safari (file:// y https://)
- * - Android Chrome (file:// y https://)
- * - Cualquier navegador móvil
- *
- * Al tomar la foto la procesa con BarcodeDetector o Quagga2
- * para leer el código de barras.
+ * ESCÁNER POS — Video stream en iframe blob
+ * ─────────────────────────────────────────
+ * Se crea una mini-página HTML como blob URL y se carga en un iframe.
+ * El iframe tiene acceso a getUserMedia con el atributo allow="camera".
+ * Al detectar un código envía postMessage al padre.
+ * Funciona en iPhone Safari, Android Chrome, archivo local (file://).
  */
 
 let scannerMode = 'pos';
-let quaggaListo = false;
 
 function normCod(c) {
   const d = String(c).replace(/\D/g, '');
   return d.replace(/^0+/, '') || d;
 }
 
-function setMsg(txt, icono) {
-  const m = document.getElementById('scannerMsg');
-  const i = document.getElementById('scannerIcono');
-  if (m) m.textContent = txt;
-  if (i && icono) i.textContent = icono;
+function setMsg(txt) {
+  const el = document.getElementById('scannerMsg');
+  if (el) el.textContent = txt;
+}
+
+/* ── HTML de la mini-página del escáner ── */
+function crearHtmlEscaner() {
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#000; overflow:hidden; width:100vw; height:100vh; }
+  video { width:100%; height:100%; object-fit:cover; display:block; }
+  canvas { display:none; position:absolute; }
+  #msg { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    color:#fff; font-family:monospace; font-size:14px; text-align:center;
+    background:rgba(0,0,0,.6); padding:10px 16px; border-radius:8px;
+    pointer-events:none; }
+  #frame {
+    position:absolute; left:50%; top:50%;
+    transform:translate(-50%,-55%);
+    width:280px; height:150px;
+    border:2px solid #0dcfb0;
+    border-radius:6px;
+    pointer-events:none;
+  }
+  #line {
+    position:absolute; left:0; right:0; height:2px;
+    background:linear-gradient(90deg,transparent,#0dcfb0,transparent);
+    top:0; animation:scan 1.8s ease-in-out infinite;
+  }
+  @keyframes scan { 0%{top:5%} 50%{top:90%} 100%{top:5%} }
+</style>
+</head>
+<body>
+<video id="v" playsinline webkit-playsinline autoplay muted></video>
+<canvas id="c"></canvas>
+<div id="frame"><div id="line"></div></div>
+<div id="msg">Iniciando cámara...</div>
+<script>
+const video = document.getElementById('v');
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d', {willReadFrequently:true});
+const msg = document.getElementById('msg');
+let activo = true;
+let raf = null;
+let haDetectado = false;
+
+async function init() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720} },
+      audio: false
+    });
+    video.srcObject = stream;
+    await new Promise(r => { video.onloadedmetadata = r; setTimeout(r,3000); });
+    await video.play().catch(()=>{});
+    msg.textContent = 'Apunta al código de barras';
+
+    if ('BarcodeDetector' in window) {
+      iniciarNativo();
+    } else {
+      iniciarCanvas();
+    }
+  } catch(e) {
+    let m = 'Error de cámara';
+    if (e.name==='NotAllowedError')  m = 'Permiso de cámara denegado';
+    if (e.name==='NotFoundError')    m = 'No se encontró cámara';
+    if (e.name==='NotReadableError') m = 'Cámara en uso por otra app';
+    msg.textContent = m;
+    window.parent.postMessage({tipo:'error', mensaje:m}, '*');
+  }
+}
+
+async function iniciarNativo() {
+  let fmts;
+  try { fmts = await BarcodeDetector.getSupportedFormats(); }
+  catch { fmts = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']; }
+  const det = new BarcodeDetector({formats:fmts});
+  async function tick() {
+    if (!activo || haDetectado) return;
+    try {
+      if (video.readyState >= 2) {
+        const r = await det.detect(video);
+        if (r.length > 0) { detectado(r[0].rawValue); return; }
+      }
+    } catch(e) {}
+    raf = requestAnimationFrame(tick);
+  }
+  tick();
+}
+
+function iniciarCanvas() {
+  // Quagga2 como fallback para iPhone
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js';
+  s.onload = () => {
+    Quagga.init({
+      inputStream: {
+        type: 'LiveStream', target: video,
+        constraints: { facingMode:'environment' }
+      },
+      locator: { patchSize:'medium', halfSample:true },
+      numOfWorkers: 0,
+      frequency: 10,
+      decoder: { readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','code_39_reader'] },
+      locate: true
+    }, err => {
+      if (err) { msg.textContent = 'Error escáner: ' + (err.message||err); return; }
+      Quagga.start();
+    });
+    Quagga.onDetected(r => {
+      if (!activo || haDetectado) return;
+      const code = r && r.codeResult && r.codeResult.code;
+      if (code) detectado(code);
+    });
+  };
+  s.onerror = () => { msg.textContent = 'Sin escáner disponible. Usa el campo manual.'; };
+  document.head.appendChild(s);
+}
+
+function detectado(codigo) {
+  if (haDetectado) return;
+  haDetectado = true;
+  activo = false;
+  if (raf) cancelAnimationFrame(raf);
+  try { if (window.Quagga) Quagga.stop(); } catch(e) {}
+  document.getElementById('frame').style.borderColor = '#56d364';
+  msg.textContent = '✓ ' + codigo;
+  if (navigator.vibrate) navigator.vibrate(100);
+  window.parent.postMessage({tipo:'codigo', valor:codigo}, '*');
+}
+
+init();
+<\/script>
+</body>
+</html>`;
 }
 
 /* ── Abrir escáner ── */
 function abrirScanner(modo) {
   scannerMode = modo;
   document.getElementById('scannerManualInput').value = '';
-  document.getElementById('scannerPreview').style.display = 'none';
-  const titulo = modo === 'pos' ? 'Escanear para vender' : 'Escanear código';
-  document.querySelector('#mScanner .mtitle').textContent = '📷 ' + titulo;
-  setMsg('Toma una foto del código de barras del producto.\nMantén el código centrado y con buena luz.', '📷');
+  setMsg('Cargando cámara...');
+
+  const htmlEscaner = crearHtmlEscaner();
+  const blob = new Blob([htmlEscaner], { type: 'text/html' });
+  const blobUrl = URL.createObjectURL(blob);
+
+  const iframe = document.getElementById('scannerIframe');
+  iframe.src = blobUrl;
+
+  // Limpiar blob URL cuando cargue
+  iframe.onload = () => {
+    URL.revokeObjectURL(blobUrl);
+    setMsg('Apunta la cámara al código de barras');
+  };
+
   om('mScanner');
 }
 
-/* ── Tomar foto con cámara trasera ── */
-function tomarFoto() {
-  const inp = document.getElementById('scannerFileInput');
-  inp.setAttribute('capture', 'environment'); // cámara trasera
-  inp.value = '';
-  inp.click();
-}
+/* ── Recibir código del iframe ── */
+window.addEventListener('message', function(event) {
+  if (!event.data || typeof event.data !== 'object') return;
 
-/* ── Elegir de galería ── */
-function elegirDeGaleria() {
-  const inp = document.getElementById('scannerFileInput');
-  inp.removeAttribute('capture'); // sin capture = galería
-  inp.value = '';
-  inp.click();
-}
+  if (event.data.tipo === 'codigo') {
+    const codigo = event.data.valor;
+    setMsg('✓ Detectado: ' + codigo);
+    setTimeout(() => {
+      cerrarScanner();
+      usarCodigo(codigo);
+    }, 500);
+  } else if (event.data.tipo === 'error') {
+    setMsg('⚠ ' + event.data.mensaje + ' — Escribe el código abajo');
+  }
+});
 
-/* ── Procesar la foto tomada ── */
+/* ── Procesar foto (fallback para cuando el stream no funciona) ── */
 async function procesarFotoEscaner(inputEl) {
   const file = inputEl.files && inputEl.files[0];
   if (!file) return;
-
-  setMsg('Procesando imagen...', '⏳');
-
-  // Mostrar preview
-  const preview = document.getElementById('scannerPreview');
-  const urlFoto = URL.createObjectURL(file);
-  preview.src   = urlFoto;
-  preview.style.display = 'block';
-
+  setMsg('Procesando imagen...');
   try {
     const codigo = await leerCodigoDesdeArchivo(file);
     if (codigo) {
-      setMsg('✓ Código detectado: ' + codigo, '✅');
-      setTimeout(() => {
-        cerrarScanner();
-        usarCodigo(codigo);
-        URL.revokeObjectURL(urlFoto);
-      }, 800);
+      setMsg('✓ Detectado: ' + codigo);
+      setTimeout(() => { cerrarScanner(); usarCodigo(codigo); }, 600);
     } else {
-      setMsg('No se detectó código. Intenta acercarte más al código o mejora la iluminación.', '⚠️');
+      setMsg('⚠ No se detectó código. Intenta con mejor iluminación.');
     }
-  } catch(e) {
-    setMsg('Error procesando la imagen. Intenta de nuevo.', '❌');
-  }
+  } catch(e) { setMsg('⚠ Error procesando imagen.'); }
 }
 
-/* ── Leer código desde un archivo de imagen ── */
+/* ── Leer código desde archivo de imagen ── */
 async function leerCodigoDesdeArchivo(file) {
-  // Crear imagen desde el archivo
-  const img = await crearImagen(file);
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = URL.createObjectURL(file);
+  });
 
-  // Motor 1: BarcodeDetector nativo (Chrome, Edge, Samsung)
   if ('BarcodeDetector' in window) {
     try {
-      let formatos;
-      try   { formatos = await BarcodeDetector.getSupportedFormats(); }
-      catch { formatos = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']; }
-      const det = new BarcodeDetector({ formats: formatos });
+      let fmts;
+      try { fmts = await BarcodeDetector.getSupportedFormats(); }
+      catch { fmts = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']; }
+      const det = new BarcodeDetector({ formats: fmts });
       const res = await det.detect(img);
       if (res.length > 0) return res[0].rawValue;
     } catch(e) {}
   }
 
-  // Motor 2: Quagga2 desde imagen (iPhone Safari, Firefox)
-  return await leerConQuagga(file);
-}
-
-/* ── Crear elemento Image desde File ── */
-function crearImagen(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload  = () => resolve(img);
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
-}
-
-/* ── Quagga2 desde imagen estática ── */
-function leerConQuagga(file) {
-  return new Promise((resolve) => {
-    function ejecutar() {
+  return await new Promise(resolve => {
+    function run() {
       const url = URL.createObjectURL(file);
       Quagga.decodeSingle({
-        src: url,
-        numOfWorkers: 0,
-        locate: true,
-        locator: { patchSize: 'large', halfSample: false },
-        decoder: {
-          readers: [
-            'ean_reader','ean_8_reader',
-            'upc_reader','upc_e_reader',
-            'code_128_reader','code_39_reader',
-            'code_93_reader'
-          ]
-        }
-      }, function(result) {
+        src: url, numOfWorkers: 0, locate: true,
+        locator: { patchSize:'large', halfSample:false },
+        decoder: { readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','code_39_reader'] }
+      }, r => {
         URL.revokeObjectURL(url);
-        if (result && result.codeResult && result.codeResult.code) {
-          resolve(result.codeResult.code);
-        } else {
-          resolve(null);
-        }
+        resolve(r && r.codeResult ? r.codeResult.code : null);
       });
     }
-
-    if (window.Quagga) {
-      ejecutar();
-    } else {
-      const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js';
-      s.onload  = ejecutar;
-      s.onerror = () => resolve(null);
-      document.head.appendChild(s);
-    }
+    if (window.Quagga) { run(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js';
+    s.onload = run;
+    s.onerror = () => resolve(null);
+    document.head.appendChild(s);
   });
 }
 
-/* ── Usar el código detectado ── */
+/* ── Usar el código ── */
 function usarCodigo(codigo) {
   const cod = normCod(codigo);
   if (scannerMode === 'pos') {
@@ -2866,11 +2974,11 @@ function usarCodigo(codigo) {
   } else {
     const inp = document.getElementById('ap_cod');
     if (inp) { inp.value = cod; inp.style.borderColor = 'var(--teal)'; inp.focus(); }
-    toast('✓ Código escaneado: ' + cod);
+    toast('✓ Código: ' + cod);
   }
 }
 
-/* ── Manual ── */
+/* ── Input manual ── */
 function usarManual() {
   const val = document.getElementById('scannerManualInput').value.trim();
   if (!val) return;
@@ -2881,15 +2989,20 @@ function usarCodigoManualScanner() { usarManual(); }
 
 /* ── Cerrar ── */
 function cerrarScanner() {
-  document.getElementById('scannerPreview').style.display = 'none';
-  document.getElementById('scannerFileInput').value = '';
+  const iframe = document.getElementById('scannerIframe');
+  iframe.src = 'about:blank';
   cm('mScanner');
+}
+
+/* ── Linterna (controlada desde el iframe) ── */
+function toggleLinterna() {
+  const iframe = document.getElementById('scannerIframe');
+  try {
+    iframe.contentWindow.postMessage({ tipo: 'linterna' }, '*');
+  } catch(e) {}
 }
 
 document.getElementById('mScanner').addEventListener('click', function(e) {
   if (e.target === this) cerrarScanner();
 });
-
-/* ── Linterna (solo en modo stream, no aplica aquí) ── */
-function toggleLinterna() { toast('La linterna funciona desde la cámara nativa del dispositivo'); }
 </script>
