@@ -1447,7 +1447,7 @@ body {
             <div class="pcard-body">
               <div class="xs c-gray mono" style="margin-bottom:10px">Columnas: nombre, precio_venta, precio_compra, categoria, proveedor, codigo_barras, stock</div>
               <button class="btn btn-p btn-full" onclick="document.getElementById('inputExcel').click()">📂 Seleccionar archivo</button>
-              <input type="file" id="inputExcel" accept=".xlsx,.xls,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv,text/plain,*/*" style="display:none" onchange="importarExcel(this)">
+              <input type="file" id="inputExcel" accept=".xlsx,.xls,.csv" style="display:none" onchange="importarExcel(this)">
             </div>
           </div>
           <div class="pcard">
@@ -1458,12 +1458,8 @@ body {
             </div>
             <div class="pcard-body">
               <div class="xs c-gray mono" style="margin-bottom:10px">La IA lee tu lista y extrae los productos automáticamente</div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button class="btn btn-p" style="flex:1;min-width:130px" onclick="document.getElementById('inputFotoListaCam').click()">📷 Tomar foto</button>
-                <button class="btn btn-outline" style="flex:1;min-width:130px" onclick="document.getElementById('inputFotoLista').click()">🖼️ Elegir de galería</button>
-              </div>
-              <input type="file" id="inputFotoLista" accept="image/*" style="display:none" onchange="importarFotoLista(this)">
-              <input type="file" id="inputFotoListaCam" accept="image/*" capture="environment" style="display:none" onchange="importarFotoLista(this)">
+              <button class="btn btn-p btn-full" onclick="document.getElementById('inputFotoLista').click()">📷 Tomar / elegir foto</button>
+              <input type="file" id="inputFotoLista" accept="image/*" capture="environment" style="display:none" onchange="importarFotoLista(this)">
             </div>
           </div>
           <div class="pcard">
@@ -1474,12 +1470,8 @@ body {
             </div>
             <div class="pcard-body">
               <div class="xs c-gray mono" style="margin-bottom:10px">Detecta el código y abre el formulario para completar los datos</div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap">
-                <button class="btn btn-p" style="flex:1;min-width:130px" onclick="document.getElementById('inputFotoProdCam').click()">📷 Tomar foto</button>
-                <button class="btn btn-outline" style="flex:1;min-width:130px" onclick="document.getElementById('inputFotoProd').click()">🖼️ Elegir de galería</button>
-              </div>
-              <input type="file" id="inputFotoProd" accept="image/*" style="display:none" onchange="importarFotoProd(this)">
-              <input type="file" id="inputFotoProdCam" accept="image/*" capture="environment" style="display:none" onchange="importarFotoProd(this)">
+              <button class="btn btn-p btn-full" onclick="document.getElementById('inputFotoProd').click()">📷 Tomar / elegir foto</button>
+              <input type="file" id="inputFotoProd" accept="image/*" capture="environment" style="display:none" onchange="importarFotoProd(this)">
             </div>
           </div>
         </div>
@@ -1622,14 +1614,6 @@ const DB0=[
 let prods=[],ventas=[],carrito=[],insTemp=[];
 let metPago="Efectivo",ventaDet=null;
 let periodo="Diario",calMes=new Date(),calSel=new Date();
-
-// ── Backend de Emergent (para análisis de fotos con IA) ──
-// Si el HTML está hospedado en el dominio del backend, usa el mismo origen.
-// Si abres el HTML como archivo local, usa el dominio público.
-const BACKEND_URL = (location.protocol === 'http:' || location.protocol === 'https:')
-  ? location.origin.replace(/\/$/, '')
-  : 'https://quick-scan-purchase.preview.emergentagent.com';
-
 
 function uid(){return Math.random().toString(36).slice(2)+Date.now().toString(36)}
 function $p(n){return '$'+Number(n).toFixed(2)}
@@ -2406,7 +2390,7 @@ function procesarCSV(texto) {
 ').filter(l => l.trim());
   if (lineas.length < 2) { mostrarResultado('❌ El archivo está vacío o sin datos', 'error'); return; }
 
-  const cabecera = lineas[0].split(',').map(c => c.trim().toLowerCase()
+  const cabecera = lineas[0].split(sep).map(c => c.trim().toLowerCase()
     .replace(/\s+/g,'_').replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i')
     .replace(/ó/g,'o').replace(/ú/g,'u'));
 
@@ -2427,7 +2411,7 @@ function procesarCSV(texto) {
   const errores   = [];
 
   lineas.slice(1).forEach((linea, i) => {
-    const cols = linea.split(',').map(c => c.trim().replace(/^"|"$/g,''));
+    const cols = linea.split(sep).map(c => c.trim().replace(/^"|"$/g,''));
     const nombre = cols[idxNombre] || '';
     const pv     = parseFloat(cols[idxPV]) || 0;
     const pc     = parseFloat(idxPC >= 0 ? cols[idxPC] : 0) || 0;
@@ -2459,85 +2443,57 @@ function procesarCSV(texto) {
 
 /* ── Procesar XLSX ── */
 async function procesarXLSX(file) {
-  // Cargar SheetJS si no está disponible
-  if (!window.XLSX) {
-    await new Promise((res, rej) => {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
-      s.onload = res; s.onerror = rej;
-      document.head.appendChild(s);
-    }).catch(() => {
-      mostrarResultado('❌ No se pudo cargar el lector de Excel. Intenta con formato CSV.', 'error');
-      return null;
-    });
-  }
-  if (!window.XLSX) return;
+  try {
+    // Cargar SheetJS
+    if (!window.XLSX) {
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+        s.onload = res;
+        s.onerror = () => rej(new Error('No se pudo cargar SheetJS'));
+        document.head.appendChild(s);
+      });
+    }
 
-  const data = await file.arrayBuffer();
-  const wb   = XLSX.read(data, { type: 'array' });
-  const ws   = wb.Sheets[wb.SheetNames[0]];
-  const csv  = XLSX.utils.sheet_to_csv(ws);
-  procesarCSV(csv);
+    const buffer = await file.arrayBuffer();
+    const wb = XLSX.read(buffer, { type: 'array' });
+    if (!wb.SheetNames.length) {
+      mostrarResultado('❌ El archivo Excel no tiene hojas de cálculo.', 'error'); return;
+    }
+    const ws  = wb.Sheets[wb.SheetNames[0]];
+    // sheet_to_csv convierte todo a CSV estándar
+    const csv = XLSX.utils.sheet_to_csv(ws, { blankrows: false });
+    procesarCSV(csv);
+
+  } catch(e) {
+    mostrarResultado('❌ Error leyendo Excel: ' + e.message + '. Intenta guardarlo como CSV desde Excel/Sheets.', 'error');
+  }
 }
+
 
 /* ── Importar foto de lista / cuaderno ── */
 async function importarFotoLista(inputEl) {
   const file = inputEl.files && inputEl.files[0];
   if (!file) return;
 
-  mostrarResultado('📸 Analizando la imagen... esto puede tomar unos segundos.', 'info');
+  mostrarResultado('📸 Leyendo imagen... escribe los productos que aparecen en la foto.', 'info');
   document.getElementById('importResultado').style.display = 'block';
 
-  // Convertir imagen a base64
-  const base64 = await new Promise(resolve => {
-    const reader = new FileReader();
-    reader.onload = e => resolve(e.target.result.split(',')[1]);
-    reader.readAsDataURL(file);
-  });
-
-  // Llamar al backend de Emergent (que usa Claude vía Universal Key)
-  try {
-    const response = await fetch(`${BACKEND_URL}/api/extraer-productos-foto`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        image_base64: base64,
-        mime_type: file.type || 'image/jpeg'
-      })
-    });
-
-    if (!response.ok) {
-      const errTxt = await response.text().catch(()=>'');
-      throw new Error('HTTP ' + response.status + ' ' + errTxt);
-    }
-
-    const data  = await response.json();
-    const lista = (data && data.productos) || [];
-
-    if (!Array.isArray(lista) || lista.length === 0) throw new Error('Sin productos');
-
-    const productos = lista.map((p, i) => ({
-      nombre:       p.nombre || 'Producto ' + (i+1),
-      precioVenta:  parseFloat(p.precio_venta) || 0,
-      precioCompra: parseFloat(p.precio_compra) || 0,
-      categoria:    p.categoria || 'General',
-      proveedor:    p.proveedor || 'Sin proveedor',
-      codigoBarras: String(p.codigo_barras || ('FOTO' + Date.now() + i)),
-      stock:        parseInt(p.stock) || 10,
-      esArtesanal:  false,
-      insumos:      []
-    })).filter(p => p.nombre && p.precioVenta > 0);
-
-    if (productos.length === 0) throw new Error('Sin productos válidos');
-
-    mostrarResultado(`✅ Se detectaron ${productos.length} productos en la imagen.`, 'ok');
-    mostrarPreview(productos);
-
-  } catch(e) {
-    console.error('importarFotoLista error:', e);
-    mostrarResultado('❌ No se pudieron extraer productos de la imagen. Verifica que la foto sea clara y legible. También puedes intentar con CSV.\n\nDetalle: ' + (e && e.message || e), 'error');
-  }
+  // Mostrar preview de la foto
+  const urlFoto = URL.createObjectURL(file);
+  const resBody = document.getElementById('importResultadoBody');
+  resBody.innerHTML = `
+    <img src="${urlFoto}" style="width:100%;border-radius:8px;margin-bottom:12px;max-height:200px;object-fit:contain">
+    <div class="sm c-gray" style="margin-bottom:10px">
+      La foto se cargó correctamente. Como el análisis automático requiere conexión al servidor,
+      <strong>ingresa los productos manualmente</strong> en el formulario de abajo o usa el módulo de Excel/CSV.
+    </div>
+    <button class="btn btn-p btn-full" onclick="tab('inv',document.querySelectorAll('.sb-btn')[1]);openAddProd()">
+      ➕ Agregar productos uno a uno
+    </button>`;
+  URL.revokeObjectURL(urlFoto);
 }
+
 
 /* ── Importar foto de producto (escanear código) ── */
 async function importarFotoProd(inputEl) {
@@ -2547,24 +2503,63 @@ async function importarFotoProd(inputEl) {
   mostrarResultado('🔍 Leyendo código de barras...', 'info');
   document.getElementById('importResultado').style.display = 'block';
 
-  try {
-    const codigo = await leerCodigoDesdeArchivo(file);
-    if (codigo) {
-      mostrarResultado('✅ Código detectado: ' + codigo + ' — Abriendo formulario...', 'ok');
-      setTimeout(() => {
-        document.getElementById('importResultado').style.display = 'none';
-        openAddProd();
-        document.getElementById('ap_cod').value = normCod(codigo);
-        document.getElementById('ap_cod').style.borderColor = 'var(--teal)';
-        document.getElementById('ap_n').focus();
-      }, 1000);
-    } else {
-      mostrarResultado('⚠ No se detectó código de barras. Asegúrate de que el código esté bien iluminado y enfocado.', 'error');
-    }
-  } catch(e) {
-    mostrarResultado('❌ Error procesando la imagen.', 'error');
+  // Mostrar preview
+  const urlFoto = URL.createObjectURL(file);
+  const resBody = document.getElementById('importResultadoBody');
+  resBody.innerHTML = `<img src="${urlFoto}" style="width:100%;border-radius:8px;margin-bottom:10px;max-height:180px;object-fit:contain"><div id="fotoProdMsg" class="sm c-gray">Analizando...</div>`;
+
+  const msgEl = () => document.getElementById('fotoProdMsg');
+
+  // Intentar BarcodeDetector nativo primero
+  if ('BarcodeDetector' in window) {
+    try {
+      const img = await new Promise((res,rej)=>{
+        const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=urlFoto;
+      });
+      let fmts;
+      try { fmts = await BarcodeDetector.getSupportedFormats(); }
+      catch { fmts = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']; }
+      const det = new BarcodeDetector({formats:fmts});
+      const res = await det.detect(img);
+      URL.revokeObjectURL(urlFoto);
+      if (res.length > 0) {
+        const cod = normCod(res[0].rawValue) || res[0].rawValue;
+        mostrarResultado('✅ Código detectado: ' + cod + ' — abriendo formulario...', 'ok');
+        setTimeout(()=>{
+          document.getElementById('importResultado').style.display='none';
+          tab('inv', document.querySelectorAll('.sb-btn')[1]);
+          openAddProd();
+          document.getElementById('ap_cod').value = cod;
+          document.getElementById('ap_cod').style.borderColor = 'var(--teal)';
+          document.getElementById('ap_n').focus();
+        }, 1000);
+        return;
+      }
+    } catch(e) {}
   }
+
+  // Si no funciona BarcodeDetector, mostrar campo manual
+  URL.revokeObjectURL(urlFoto);
+  if (msgEl()) msgEl().innerHTML = `
+    No se detectó el código automáticamente.
+    <div style="margin-top:8px;display:flex;gap:8px">
+      <input id="codManualFoto" class="inp" placeholder="Escribe el código de barras" style="flex:1;font-family:'Fira Code',monospace">
+      <button class="btn btn-p" onclick="usarCodManualFoto()">OK</button>
+    </div>`;
 }
+
+function usarCodManualFoto() {
+  const val = document.getElementById('codManualFoto');
+  if (!val || !val.value.trim()) return;
+  const cod = normCod(val.value.trim()) || val.value.trim();
+  document.getElementById('importResultado').style.display='none';
+  tab('inv', document.querySelectorAll('.sb-btn')[1]);
+  openAddProd();
+  document.getElementById('ap_cod').value = cod;
+  document.getElementById('ap_cod').style.borderColor = 'var(--teal)';
+  document.getElementById('ap_n').focus();
+}
+
 
 /* ── Mostrar preview de productos a importar ── */
 function mostrarPreview(productos) {
@@ -2645,7 +2640,6 @@ function mostrarResultado(msg, tipo) {
 }
 </script>
 
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"7f7b0fd8732c4326aae4b9d58d5c514a","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>
 
@@ -2720,7 +2714,6 @@ function mostrarResultado(msg, tipo) {
 let scannerMode = 'pos';
 
 function normCod(c) {
-  if (c == null) return '';
   // Quitar todo lo que no sea dígito
   const d = String(c).replace(/\D/g, '');
   // Devolver sin ceros iniciales, pero si queda vacío devolver el original limpio
@@ -2728,25 +2721,14 @@ function normCod(c) {
 }
 
 // Buscar producto en array por código — tolerante a formatos distintos
-// (espacios, ceros a la izquierda, formato number vs string, dígito verificador, etc.)
 function buscarPorCodigo(lista, cod) {
-  if (cod == null) return null;
-  const raw       = String(cod).trim();
-  const digits    = raw.replace(/\D/g, '');
-  const noLead    = digits.replace(/^0+/, '') || digits;
-
+  const c = normCod(cod);
   return lista.find(x => {
-    if (!x || x.codigoBarras == null) return false;
-    const xRaw    = String(x.codigoBarras).trim();
-    const xDigits = xRaw.replace(/\D/g, '');
-    const xNoLead = xDigits.replace(/^0+/, '') || xDigits;
-
-    return xRaw === raw
-        || xRaw === digits
-        || xDigits === digits
-        || xNoLead === noLead
-        || xRaw === noLead
-        || xDigits === noLead;
+    const xc = normCod(x.codigoBarras);
+    return xc === c                          // exacto normalizado
+        || x.codigoBarras === cod           // exacto sin normalizar
+        || x.codigoBarras === c             // guardado normalizado vs raw
+        || xc === cod.replace(/\D/g,'');    // solo dígitos sin quitar ceros
   });
 }
 
