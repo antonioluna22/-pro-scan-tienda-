@@ -1682,22 +1682,21 @@ function toast(msg,d=2500){
 function addCodigo(){
   const inp=document.getElementById('codigoInput');
   const raw=inp.value.trim();
-  const cod=normCod(raw)||raw;
-  if(!cod){toast('⚠ Ingresa un código');return;}
+  if(!raw){toast('⚠ Sin código');return;}
   inp.value='';
+  const cod=normCod(raw)||raw;
 
-  // 1. Buscar en inventario propio
-  let p=prods.find(x=>normCod(x.codigoBarras)===cod);
+  // 1. Buscar en inventario propio — búsqueda tolerante a formatos
+  let p=buscarPorCodigo(prods, raw);
   if(p){
     if(p.stock<=0){toast('✕ Sin stock: '+p.nombre,3000);return;}
     addCart(p);return;
   }
 
   // 2. Buscar en base de datos local predefinida
-  const loc=DB0.find(x=>normCod(x.codigoBarras)===cod);
+  const loc=buscarPorCodigo(DB0, raw);
   if(loc){
-    // Guardarlo en el inventario propio y agregar al carrito
-    const nuevo={...loc,id:uid()};
+    const nuevo={...loc,id:uid(),codigoBarras:cod};
     prods.push(nuevo);save();
     addCart(nuevo);return;
   }
@@ -1716,7 +1715,7 @@ function abrirRegistroRapido(cod) {
     document.getElementById(id).value='';
   });
   // Poner el código escaneado
-  document.getElementById('ap_cod').value = cod;
+  document.getElementById('ap_cod').value = normCod(cod)||cod;
   document.getElementById('pvPrevEl').style.display='none';
 
   // Cambiar el título y botón del modal para indicar contexto de venta
@@ -1970,7 +1969,7 @@ function saveProd(){
   if(!n||!c||isNaN(pv)||isNaN(pc)||!cod){toast('✕ Completa los campos obligatorios');return;}
 
   const nuevo={id:uid(),nombre:n,categoria:c,proveedor:pr,precioVenta:pv,precioCompra:pc,
-    codigoBarras:cod,stock:st,esArtesanal:false,insumos:[],fechaRegistro:new Date().toISOString()};
+    codigoBarras:normCod(cod)||cod,stock:st,esArtesanal:false,insumos:[],fechaRegistro:new Date().toISOString()};
   prods.push(nuevo);
   save();renderInv();renderQProds();
 
@@ -2620,12 +2619,12 @@ function confirmarImport() {
   let nuevos = 0, duplicados = 0;
 
   productosAImportar.forEach(p => {
-    const cod = normCod(p.codigoBarras);
-    const existe = prods.find(x => normCod(x.codigoBarras) === cod);
+    const cod = normCod(p.codigoBarras) || p.codigoBarras;
+    const existe = buscarPorCodigo(prods, cod);
     if (existe) {
       duplicados++;
     } else {
-      prods.push({ id: uid(), ...p, codigoBarras: cod, fechaRegistro: new Date().toISOString() });
+      prods.push({ id: uid(), ...p, codigoBarras: normCod(cod)||cod, fechaRegistro: new Date().toISOString() });
       nuevos++;
     }
   });
@@ -2724,8 +2723,22 @@ function mostrarResultado(msg, tipo) {
 let scannerMode = 'pos';
 
 function normCod(c) {
+  // Quitar todo lo que no sea dígito
   const d = String(c).replace(/\D/g, '');
+  // Devolver sin ceros iniciales, pero si queda vacío devolver el original limpio
   return d.replace(/^0+/, '') || d;
+}
+
+// Buscar producto en array por código — tolerante a formatos distintos
+function buscarPorCodigo(lista, cod) {
+  const c = normCod(cod);
+  return lista.find(x => {
+    const xc = normCod(x.codigoBarras);
+    return xc === c                          // exacto normalizado
+        || x.codigoBarras === cod           // exacto sin normalizar
+        || x.codigoBarras === c             // guardado normalizado vs raw
+        || xc === cod.replace(/\D/g,'');    // solo dígitos sin quitar ceros
+  });
 }
 
 function setMsg(txt) {
