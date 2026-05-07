@@ -1718,35 +1718,41 @@ function toast(msg,d=2500){
 // POS
 // ══════════════════════════════════════════
 function addCodigo(){
-  const inp=document.getElementById('codigoInput');
-  const raw=inp.value.trim();
-  if(!raw){toast('⚠ Sin código');return;}
-  inp.value='';
-  const cod=normCod(raw)||raw;
+  const inp = document.getElementById('codigoInput');
+  const raw = inp.value.trim();
+  if(!raw) return;
+  inp.value = '';
 
-  // 1. Buscar en inventario propio — búsqueda tolerante a formatos
-  let p=buscarPorCodigo(prods, raw);
-  if(p){
-    if(p.stock<=0){toast('✕ Sin stock: '+p.nombre,3000);return;}
-    addCart(p);return;
+  function igual(a, b){
+    const limpiar = s => String(s).replace(/[^0-9]/g,'').replace(/^0+/,'') || String(s);
+    return limpiar(a) === limpiar(b);
   }
 
-  // 2. Buscar en base de datos local predefinida
-  const loc=buscarPorCodigo(DB0, raw);
-  if(loc){
-    const nuevo={...loc,id:uid(),codigoBarras:cod};
-    prods.push(nuevo);save();
-    addCart(nuevo);return;
+  // 1 — Buscar en inventario del usuario
+  const enStock = prods.find(x => igual(x.codigoBarras, raw));
+  if(enStock){
+    if(enStock.stock <= 0){
+      toast('❌ Sin stock: ' + enStock.nombre, 3000);
+      return;
+    }
+    addCart(enStock);
+    return;
   }
 
-  // 3. Producto NO encontrado en ninguna base de datos:
-  //    Abrir formulario de nuevo producto con el código ya llenado
-  //    para que el usuario lo registre en ese momento
-  toast('📋 Producto nuevo — regístralo para continuar', 3500);
-  abrirRegistroRapido(cod);
+  // 2 — Buscar en base predefinida
+  const enDB = DB0.find(x => igual(x.codigoBarras, raw));
+  if(enDB){
+    const nuevo = {...enDB, id: uid()};
+    prods.push(nuevo); save();
+    addCart(nuevo);
+    return;
+  }
+
+  // 3 — No encontrado: solo aviso, NO abrir formulario
+  toast('⚠ Producto no registrado. Agrégalo desde Inventario.', 3500);
 }
 
-/* ── Registro rápido desde el escáner de venta ── */
+
 function abrirRegistroRapido(cod) {
   // Limpiar formulario
   ['ap_n','ap_c','ap_pr','ap_pv','ap_pc','ap_st'].forEach(id=>{
@@ -2973,7 +2979,7 @@ async function init() {
       audio: false
     });
     video.srcObject = stream;
-    await new Promise(r => { video.onloadedmetadata = r; setTimeout(r,3000); });
+    await new Promise(r => { video.onloadedmetadata = r; setTimeout(r,1200); });
     await video.play().catch(()=>{});
     msg.textContent = 'Apunta al código de barras';
 
@@ -2993,10 +2999,9 @@ async function init() {
 }
 
 async function iniciarNativo() {
-  let fmts;
-  try { fmts = await BarcodeDetector.getSupportedFormats(); }
-  catch { fmts = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','qr_code']; }
-  const det = new BarcodeDetector({formats:fmts});
+  // Usar solo EAN/UPC para ser más rápido (los más comunes en abarrotes)
+  const fmts = ['ean_13','ean_8','upc_a','upc_e','code_128','code_39','code_93','qr_code'];
+  const det = new BarcodeDetector({formats: fmts});
   async function tick() {
     if (!activo || haDetectado) return;
     try {
@@ -3005,7 +3010,8 @@ async function iniciarNativo() {
         if (r.length > 0) { detectado(r[0].rawValue); return; }
       }
     } catch(e) {}
-    raf = requestAnimationFrame(tick);
+    // setTimeout(0) en lugar de requestAnimationFrame — más llamadas por segundo
+    raf = setTimeout(tick, 0);
   }
   tick();
 }
@@ -3018,12 +3024,15 @@ function iniciarCanvas() {
     Quagga.init({
       inputStream: {
         type: 'LiveStream', target: video,
-        constraints: { facingMode:'environment' }
+        constraints: { facingMode:'environment', width:{ideal:1280}, height:{ideal:720} }
       },
-      locator: { patchSize:'medium', halfSample:true },
+      locator: { patchSize:'large', halfSample:false },
       numOfWorkers: 0,
-      frequency: 10,
-      decoder: { readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader','code_39_reader'] },
+      frequency: 20,
+      decoder: {
+        readers:['ean_reader','ean_8_reader','upc_reader','upc_e_reader','code_128_reader'],
+        multiple: false
+      },
       locate: true
     }, err => {
       if (err) { msg.textContent = 'Error escáner: ' + (err.message||err); return; }
@@ -3048,7 +3057,10 @@ function detectado(codigo) {
   document.getElementById('frame').style.borderColor = '#56d364';
   msg.textContent = '✓ ' + codigo;
   if (navigator.vibrate) navigator.vibrate(100);
-  window.parent.postMessage({tipo:'codigo', valor:codigo}, '*');
+  // Cerrar rápido — 150ms solo para el feedback visual
+  setTimeout(() => {
+    window.parent.postMessage({tipo:'codigo', valor:codigo}, '*');
+  }, 150);
 }
 
 init();
@@ -3085,11 +3097,11 @@ window.addEventListener('message', function(event) {
 
   if (event.data.tipo === 'codigo') {
     const codigo = event.data.valor;
-    setMsg('✓ Detectado: ' + codigo);
+    setMsg('✓ ' + codigo);
     setTimeout(() => {
       cerrarScanner();
       usarCodigo(codigo);
-    }, 500);
+    }, 200);
   } else if (event.data.tipo === 'error') {
     setMsg('⚠ ' + event.data.mensaje + ' — Escribe el código abajo');
   }
