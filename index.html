@@ -1351,27 +1351,31 @@ body {
               <div class="cfg-head">⚙ Costos fijos diarios</div>
               <div class="cfg-fields">
                 <div class="cfg-field">
-                  <div class="cfg-lbl">💰 Sueldos / día</div>
-                  <input class="cfg-inp" id="cfSueldos" type="number" step="0.01" value="500" oninput="recalc()">
+                  <div class="cfg-lbl">💰 Sueldos del personal / mes</div>
+                  <input class="cfg-inp" id="cfSueldos" type="number" step="0.01" value="15000" oninput="recalc()">
                 </div>
                 <div class="cfg-field">
-                  <div class="cfg-lbl">🏠 Renta / día</div>
-                  <input class="cfg-inp" id="cfRenta" type="number" step="0.01" value="200" oninput="recalc()">
+                  <div class="cfg-lbl">🏠 Renta / mes</div>
+                  <input class="cfg-inp" id="cfRenta" type="number" step="0.01" value="6000" oninput="recalc()">
                 </div>
                 <div class="cfg-field">
-                  <div class="cfg-lbl">💡 Luz / día</div>
-                  <input class="cfg-inp" id="cfLuz" type="number" step="0.01" value="80" oninput="recalc()">
+                  <div class="cfg-lbl">💡 Luz / mes</div>
+                  <input class="cfg-inp" id="cfLuz" type="number" step="0.01" value="1500" oninput="recalc()">
                 </div>
                 <div class="cfg-field">
-                  <div class="cfg-lbl">🔥 Gas / día</div>
-                  <input class="cfg-inp" id="cfGas" type="number" step="0.01" value="40" oninput="recalc()">
+                  <div class="cfg-lbl">🔥 Gas / mes</div>
+                  <input class="cfg-inp" id="cfGas" type="number" step="0.01" value="800" oninput="recalc()">
                 </div>
                 <div class="cfg-field">
-                  <div class="cfg-lbl">📦 Otros / día</div>
-                  <input class="cfg-inp" id="cfOtros" type="number" step="0.01" value="60" oninput="recalc()">
+                  <div class="cfg-lbl">📦 Otros gastos fijos / mes</div>
+                  <input class="cfg-inp" id="cfOtros" type="number" step="0.01" value="1200" oninput="recalc()">
                 </div>
                 <div class="cfg-field">
-                  <div class="cfg-lbl">📅 Fecha a analizar</div>
+                  <div class="cfg-lbl">📅 Días laborales al mes</div>
+                  <input class="cfg-inp" id="cfDias" type="number" step="1" value="26" min="1" max="31" oninput="recalc()">
+                </div>
+                <div class="cfg-field">
+                  <div class="cfg-lbl">📅 Fecha a analizar (ventas del día)</div>
                   <input class="cfg-date" id="cfFecha" type="date" oninput="recalc()">
                 </div>
                 <button class="btn btn-p btn-full" onclick="recalc()" style="margin-top:4px">🔄 Recalcular</button>
@@ -1381,9 +1385,16 @@ body {
 
           <!-- RESULTADOS -->
           <div>
-            <div class="formula-grid" id="formulaGrid"></div>
+            <div class="formula-grid" id="formulaGrid">
+  <div class="fcrd" style="grid-column:1/-1">
+    <div class="fcrd-body"><div class="xs c-gray" style="text-align:center;padding:10px">Configura tus costos mensuales y presiona Recalcular.</div></div>
+  </div>
+</div>
             <div id="crtBox"></div>
-            <div class="pe-box mt12" id="peBox"></div>
+            <div class="pe-box mt12" id="peBox">
+  <div class="pe-head"><div style="font-size:1.2rem">⚖️</div><div class="pe-head-title">Punto de Equilibrio</div></div>
+  <div class="pe-body"><div class="xs c-gray">Configura tus costos y presiona Recalcular para ver el análisis.</div></div>
+</div>
             <div class="cfg-block mt12">
               <div class="cfg-head">🍨 CIF distribuido — solo artesanales</div>
               <div style="padding:14px 16px">
@@ -1554,12 +1565,39 @@ body {
         </div>
         <div class="fld"><label class="lbl">Precio Venta *</label><input class="inp" id="art_pv" type="number" step="0.01" placeholder="0.00" oninput="artRes()"></div>
       </div>
-      <div class="lbl" style="margin-bottom:8px">Insumos / ingredientes</div>
-      <div id="insList"></div>
-      <button class="btn btn-outline btn-full mt8" onclick="om('mIns')">+ Agregar insumo</button>
+      <!-- Unidades del lote -->
+      <div class="fld">
+        <label class="lbl">🔢 Cantidad de unidades a producir (lote)</label>
+        <input class="inp" id="art_und" type="number" step="1" min="1" placeholder="Ej. 50 paletas" oninput="artRes()">
+        <div class="xs c-gray mt8">¿Cuántas unidades vas a hacer con estos costos?</div>
+      </div>
+
       <hr class="hr">
-      <div id="artResEl" class="alt alt-info" style="display:none"></div>
-      <button class="btn btn-p btn-full btn-lg mt12" onclick="saveArt()">Guardar artesanal</button>
+
+      <!-- MPD: Total del lote -->
+      <div class="fld">
+        <label class="lbl">📦 MPD — Materia Prima total del lote ($)</label>
+        <input class="inp" id="art_mpd" type="number" step="0.01" placeholder="Ej. $150.00 en ingredientes para todo el lote" oninput="artRes()">
+      </div>
+
+      <!-- MOD: Total del lote -->
+      <div class="fld">
+        <label class="lbl">👷 MOD — Mano de Obra total del lote ($)</label>
+        <input class="inp" id="art_mod" type="number" step="0.01" placeholder="Ej. $80.00 en tiempo de trabajo para todo el lote" oninput="artRes()">
+      </div>
+
+      <!-- CIF: Total del lote -->
+      <div class="fld">
+        <label class="lbl">🏭 CIF — Cargos Indirectos total del lote ($)</label>
+        <input class="inp" id="art_cif" type="number" step="0.01" placeholder="Ej. $40.00 de renta, luz, gas para este lote" oninput="artRes()">
+      </div>
+
+      <hr class="hr">
+
+      <!-- Resultado automático -->
+      <div id="artResEl" style="display:none;border-radius:10px;overflow:hidden;margin-bottom:12px"></div>
+
+      <button class="btn btn-p btn-full btn-lg" onclick="saveArt()">Guardar artesanal</button>
     </div>
   </div>
 </div>
@@ -2000,8 +2038,13 @@ function saveProd(){
 // ARTESANALES
 // ══════════════════════════════════════════
 function openAddArt(){
-  document.getElementById('art_n').value='';document.getElementById('art_pv').value='';
-  insTemp=[];renderInsList();document.getElementById('artResEl').style.display='none';om('mAddArt');
+  ['art_n','art_pv','art_und','art_mpd','art_mod','art_cif'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  const res = document.getElementById('artResEl');
+  if(res){ res.style.display='none'; res.innerHTML=''; }
+  om('mAddArt');
 }
 function saveIns(){
   const n=document.getElementById('ins_n').value.trim();
@@ -2014,6 +2057,7 @@ function saveIns(){
 }
 function renderInsList(){
   const el=document.getElementById('insList');
+  if(!el) return; // el modal ya no usa insList
   if(!insTemp.length){el.innerHTML=`<div class="sm c-gray" style="padding:8px 0 10px;text-align:center;font-family:'Fira Code',monospace">sin insumos aún</div>`;return;}
   el.innerHTML=insTemp.map((ins,i)=>`
     <div class="irow">
@@ -2023,32 +2067,123 @@ function renderInsList(){
 }
 function delIns(i){insTemp.splice(i,1);renderInsList();artRes();}
 function artRes(){
-  const pv=parseFloat(document.getElementById('art_pv').value)||0;
-  const ct=insTemp.reduce((s,i)=>s+i.costoTotal,0);
-  const gan=pv-ct,mar=pv>0?(gan/pv*100):0;
-  const el=document.getElementById('artResEl');
-  if(pv>0){
-    el.textContent=`Costo: ${$p(ct)} · Ganancia: ${$p(gan)} · Margen: ${mar.toFixed(1)}%${mar<30?' ⚠ Bajo':' ✓'}`;
-    el.className='alt '+(mar>=30?'alt-ok':'alt-warn');el.style.display='block';
-  }else el.style.display='none';
+  const getV = id => parseFloat(document.getElementById(id)?.value) || 0;
+  const getI = id => parseInt(document.getElementById(id)?.value)   || 0;
+
+  const und  = getI('art_und');
+  const mpd  = getV('art_mpd');
+  const mod  = getV('art_mod');
+  const cif  = getV('art_cif');
+  const pv   = getV('art_pv');
+  const el   = document.getElementById('artResEl');
+  if(!el) return;
+
+  const crtLote = mpd + mod + cif;
+  if(und <= 0 || crtLote <= 0){ el.style.display='none'; return; }
+
+  const crtUnidad = crtLote / und;
+  const ganUnidad = pv > 0 ? pv - crtUnidad : 0;
+  const margen    = pv > 0 ? (ganUnidad / pv * 100) : 0;
+  const precioSug = parseFloat((crtUnidad / 0.65).toFixed(2));
+  const colorOk   = margen >= 30 ? 'var(--lime)' : 'var(--rose)';
+  const bgOk      = margen >= 30 ? 'rgba(86,211,100,.08)' : 'rgba(240,75,107,.08)';
+  const bdOk      = margen >= 30 ? 'rgba(86,211,100,.3)'  : 'rgba(240,75,107,.3)';
+
+  el.style.cssText = `display:block;background:${bgOk};border:1px solid ${bdOk};border-radius:10px;overflow:hidden;margin-bottom:12px`;
+  el.innerHTML = `
+    <div style="background:var(--s2);padding:10px 14px;border-bottom:1px solid var(--b1)">
+      <div class="xs c-gray" style="margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">Desglose del lote — ${und} unidades</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:.78rem">
+        <div style="text-align:center">
+          <div class="xs c-gray">📦 MPD</div>
+          <div class="mono" style="font-size:.9rem">${$p(mpd)}</div>
+        </div>
+        <div style="text-align:center">
+          <div class="xs c-gray">👷 MOD</div>
+          <div class="mono" style="font-size:.9rem">${$p(mod)}</div>
+        </div>
+        <div style="text-align:center">
+          <div class="xs c-gray">🏭 CIF</div>
+          <div class="mono" style="font-size:.9rem">${$p(cif)}</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:6px;font-size:.78rem;color:var(--tx2)">
+        CRT total del lote: <span class="mono">${$p(crtLote)}</span>
+      </div>
+    </div>
+    <div style="padding:12px 14px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+        <div style="text-align:center">
+          <div class="xs c-gray">🧮 Costo por unidad</div>
+          <div class="mono bold" style="font-size:1.3rem;color:var(--teal)">${$p(crtUnidad)}</div>
+          <div class="xs c-gray">(${$p(crtLote)} ÷ ${und})</div>
+        </div>
+        <div style="text-align:center">
+          <div class="xs c-gray">💡 Precio sugerido (35% margen)</div>
+          <div class="mono bold" style="font-size:1.3rem;color:var(--blue3)">${$p(precioSug)}</div>
+        </div>
+      </div>
+      ${pv > 0 ? `
+      <div style="background:var(--s2);border-radius:7px;padding:8px 12px;font-size:.8rem;text-align:center">
+        Con precio <span class="mono">${$p(pv)}</span>:
+        Ganancia <strong style="color:${colorOk}">${$p(ganUnidad)}</strong> /ud ·
+        Margen <strong style="color:${colorOk}">${margen.toFixed(1)}%</strong>
+        ${margen < 30 ? ' · ⚠ Bajo' : ' · ✓'}
+      </div>` : `
+      <div class="xs c-gray" style="text-align:center">Ingresa el precio de venta para ver la ganancia</div>`}
+    </div>`;
 }
+
+
 function saveArt(){
-  const n=document.getElementById('art_n').value.trim();
-  const c=document.getElementById('art_c').value;
-  const pv=parseFloat(document.getElementById('art_pv').value);
-  if(!n||isNaN(pv)||!insTemp.length){toast('✕ Nombre, precio e insumos requeridos');return;}
-  const ct=insTemp.reduce((s,i)=>s+i.costoTotal,0);
-  const cod='ART'+Date.now()+Math.floor(Math.random()*9999);
-  prods.push({id:uid(),nombre:n,categoria:c,precioVenta:pv,precioCompra:ct,proveedor:'Producción Propia',codigoBarras:cod,stock:0,esArtesanal:true,insumos:[...insTemp],fechaRegistro:new Date().toISOString()});
-  save();renderArt();renderInv();renderQProds();cm('mAddArt');toast('✓ Artesanal guardado: '+n);
+  const n   = document.getElementById('art_n').value.trim();
+  const c   = document.getElementById('art_c').value;
+  const pv  = parseFloat(document.getElementById('art_pv').value);
+  const und = parseInt(document.getElementById('art_und')?.value)   || 1;
+  const mpd = parseFloat(document.getElementById('art_mpd')?.value) || 0;
+  const mod = parseFloat(document.getElementById('art_mod')?.value) || 0;
+  const cif = parseFloat(document.getElementById('art_cif')?.value) || 0;
+
+  if(!n || isNaN(pv) || und <= 0){
+    toast('Nombre, precio y unidades son requeridos'); return;
+  }
+  if(mpd + mod + cif <= 0){
+    toast('Ingresa al menos un costo (MPD, MOD o CIF)'); return;
+  }
+
+  const crtLote   = mpd + mod + cif;
+  const crtUnidad = crtLote / und;
+  const cod = 'ART' + Date.now() + Math.floor(Math.random()*9999);
+
+  prods.push({
+    id: uid(), nombre: n, categoria: c,
+    precioVenta: pv,
+    precioCompra: crtUnidad,   // costo por unidad = CRT
+    proveedor: 'Producción Propia',
+    codigoBarras: cod, stock: 0,
+    esArtesanal: true,
+    lote: { und, mpd, mod, cif, crtLote, crtUnidad },
+    insumos: [],
+    fechaRegistro: new Date().toISOString()
+  });
+
+  save(); renderArt(); renderInv(); renderQProds();
+  cm('mAddArt');
+  toast('✓ ' + n + ' — Costo/unidad: ' + $p(crtUnidad));
 }
+
+
 function renderArt(){
-  const lista=prods.filter(p=>p.esArtesanal);
-  const g=document.getElementById('artGrid');
-  if(!lista.length){g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="ei">🍨</div><div class="et">Sin productos artesanales</div></div>`;return;}
-  g.innerHTML=lista.map(p=>{
-    const m=p.precioVenta>0?((p.precioVenta-p.precioCompra)/p.precioVenta*100):0;
-    const gan=p.precioVenta-p.precioCompra;
+  const lista = prods.filter(p => p.esArtesanal);
+  const g = document.getElementById('artGrid');
+  if(!lista.length){
+    g.innerHTML=`<div class="empty" style="grid-column:1/-1"><div class="ei">🍨</div><div class="et">Sin productos artesanales</div></div>`;
+    return;
+  }
+  g.innerHTML = lista.map(p => {
+    const m   = p.precioVenta > 0 ? ((p.precioVenta - p.precioCompra)/p.precioVenta*100) : 0;
+    const gan = p.precioVenta - p.precioCompra;
+    const lote = p.lote || null;
     return `<div class="pcard">
       <div class="pcard-head">
         <span class="pcard-type art">artesanal</span>
@@ -2057,19 +2192,39 @@ function renderArt(){
       </div>
       <div class="pcard-body">
         <div class="pcard-prices">
-          <span class="price-tag venta">${$p(p.precioVenta)}</span>
-          <span class="price-tag compra">costo ${$p(p.precioCompra)}</span>
+          <span class="price-tag venta">Venta ${$p(p.precioVenta)}</span>
+          <span class="price-tag compra">Costo/ud ${$p(p.precioCompra)}</span>
+          <span class="price-tag ${p.stock>0?'stock-ok':'stock-no'}">📦 ${p.stock}</span>
         </div>
         <div class="sm" style="margin:8px 0">
-          <div>Ganancia: <span class="c-lime">${$p(gan)}</span></div>
+          <div>Ganancia/unidad: <span class="c-lime">${$p(gan)}</span></div>
           <div>Margen: <span style="color:${m>=50?'var(--lime)':m>=30?'var(--amber)':'var(--rose)'}">${m.toFixed(1)}%</span></div>
         </div>
-        ${p.insumos.length?`<details style="margin-bottom:8px"><summary class="xs c-gray" style="cursor:pointer;font-family:'Fira Code',monospace">insumos (${p.insumos.length})</summary><div style="margin-top:6px">${p.insumos.map(ins=>`<div class="irow"><span>${ins.nombre} ${ins.cantidad}${ins.unidad}</span><span class="c-amber">${$p(ins.costoTotal)}</span></div>`).join('')}</div></details>`:''}
+        ${lote ? `
+        <details style="margin-bottom:8px">
+          <summary class="xs c-gray" style="cursor:pointer;font-family:'Fira Code',monospace">
+            Ver desglose del lote (${lote.und} uds)
+          </summary>
+          <div style="margin-top:6px;font-size:.78rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+            <div style="background:var(--s2);padding:6px;border-radius:5px;text-align:center">
+              <div class="xs c-gray">📦 MPD</div><div class="mono">${$p(lote.mpd)}</div>
+            </div>
+            <div style="background:var(--s2);padding:6px;border-radius:5px;text-align:center">
+              <div class="xs c-gray">👷 MOD</div><div class="mono">${$p(lote.mod)}</div>
+            </div>
+            <div style="background:var(--s2);padding:6px;border-radius:5px;text-align:center">
+              <div class="xs c-gray">🏭 CIF</div><div class="mono">${$p(lote.cif)}</div>
+            </div>
+          </div>
+          <div class="xs c-gray" style="text-align:center;margin-top:4px">
+            CRT lote: ${$p(lote.crtLote)} ÷ ${lote.und} uds = ${$p(lote.crtUnidad)}/ud
+          </div>
+        </details>` : ''}
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <span class="price-tag ${p.stock>0?'stock-ok':'stock-no'}">📦 ${p.stock}</span>
+          <span class="price-tag ${p.stock>0?'stock-ok':'stock-no'}">📦 stock: ${p.stock}</span>
           <div class="pcard-actions">
             <button class="btn btn-ghost btn-sm" onclick="editStock('${p.id}')">📦</button>
-            <button class="btn btn-p btn-sm" onclick="addCart(${JSON.stringify(p).replace(/"/g,'&quot;')});tab('pos',document.querySelector('.sb-btn'))">Vender</button>
+            <button class="btn btn-primary btn-sm" onclick="addCart(${JSON.stringify(p).replace(/"/g,'&quot;')});tab('pos',document.querySelector('.sb-btn'))">Vender</button>
             <button class="btn btn-danger btn-sm" onclick="delProd('${p.id}')">✕</button>
           </div>
         </div>
@@ -2077,6 +2232,7 @@ function renderArt(){
     </div>`;
   }).join('');
 }
+
 
 // ══════════════════════════════════════════
 // HISTORIAL
@@ -2137,94 +2293,121 @@ function getVentasDia(fecha){const d=new Date(fecha);return ventas.filter(v=>new
 
 function recalc(){
   save();
-  const fechaEl=document.getElementById('cfFecha');
-  const fecha=fechaEl.value?new Date(fechaEl.value+'T12:00:00'):new Date();
-  const vDia=getVentasDia(fecha);
-  const nUnidades=vDia.reduce((s,v)=>s+v.cantidadProductos,0);
-  const ventasBrutas=vDia.reduce((s,v)=>s+v.subtotal,0);
-  const mpd=vDia.reduce((s,v)=>s+v.costoTotal,0);
-  const sueldoTotal=parseFloat(document.getElementById('cfSueldos').value)||0;
-  const mod=sueldoTotal;
-  const cif=getCF_renta();
-  const crt=mpd+mod+cif;
-  const cf=mod+cif;
-  const mc=ventasBrutas>0?((ventasBrutas-mpd)/ventasBrutas):0;
-  const pe=mc>0?(cf/mc):null;
-  const pePct=pe?Math.min((ventasBrutas/pe)*100,100):0;
-  const fechaLabel=fecha.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
-  const noVentas=!vDia.length;
+  const fechaEl = document.getElementById('cfFecha');
+  const fecha   = fechaEl.value ? new Date(fechaEl.value+'T12:00:00') : new Date();
+  const vDia    = getVentasDia(fecha);
 
-  // FORMULA GRID
-  document.getElementById('formulaGrid').innerHTML=`
+  const ventasDia = vDia.reduce((s,v) => s + v.subtotal, 0);
+  const unidades  = vDia.reduce((s,v) => s + v.cantidadProductos, 0);
+
+  // Costos MENSUALES
+  const modMes   = parseFloat(document.getElementById('cfSueldos').value) || 0;
+  const rentaMes = parseFloat(document.getElementById('cfRenta').value)   || 0;
+  const luzMes   = parseFloat(document.getElementById('cfLuz').value)     || 0;
+  const gasMes   = parseFloat(document.getElementById('cfGas').value)     || 0;
+  const otrosMes = parseFloat(document.getElementById('cfOtros').value)   || 0;
+  const diasMes  = parseInt(document.getElementById('cfDias')?.value)     || 26;
+  const cifMes   = rentaMes + luzMes + gasMes + otrosMes;
+  const cfMes    = modMes + cifMes;  // Costos Fijos del Mes
+
+  // Convertir a día y semana
+  const cfDia    = cfMes / diasMes;
+  const cfSemana = cfDia * 7;
+
+  const fechaLabel = fecha.toLocaleDateString('es-MX',{weekday:'long',day:'numeric',month:'long'});
+  const resultado  = ventasDia - cfDia;
+  const pePct      = cfDia > 0 && ventasDia > 0 ? Math.min((ventasDia/cfDia)*100,100) : 0;
+
+  // ── Tarjetas de costos (ahora en MES) ──
+  document.getElementById('formulaGrid').innerHTML = `
     <div class="fcrd">
-      <div class="fcrd-head"><span class="fcrd-icon">📦</span><span class="fcrd-title">MPD — Materias Primas</span></div>
+      <div class="fcrd-head"><span class="fcrd-icon">👷</span><span class="fcrd-title">MOD — Mano de Obra Directa</span></div>
       <div class="fcrd-body">
-        <div class="frow"><span class="fl">Fecha</span><span class="fv c-blue">${fechaLabel}</span></div>
-        <div class="frow"><span class="fl">Ventas del día</span><span class="fv">${vDia.length}</span></div>
-        <div class="frow"><span class="fl">Unidades</span><span class="fv">${nUnidades}</span></div>
-        <div class="frow"><span class="fl">Ventas brutas</span><span class="fv c-teal">${$p(ventasBrutas)}</span></div>
-        ${noVentas?'<div class="alt alt-warn" style="margin-top:8px;font-size:.75rem">⚠ Sin ventas este día</div>':''}
+        <div class="frow"><span class="fl">Sueldos mensuales</span><span class="fv c-blue">${$p(modMes)}</span></div>
+        <div class="frow"><span class="fl">Costo por día (÷${diasMes} días)</span><span class="fv c-amber">${$p(modMes/diasMes)}</span></div>
+        <div class="frow"><span class="fl">Tipo</span><span class="fv c-gray">Costo fijo mensual</span></div>
       </div>
-      <div class="fcrd-total"><span class="ft-lbl">MPD del día</span><span class="ft-val c-amber">${$p(mpd)}</span></div>
+      <div class="fcrd-total"><span class="ft-lbl">MOD mensual</span><span class="ft-val c-amber">${$p(modMes)}</span></div>
     </div>
+
     <div class="fcrd">
-      <div class="fcrd-head"><span class="fcrd-icon">👷</span><span class="fcrd-title">MOD — Mano de Obra</span></div>
+      <div class="fcrd-head"><span class="fcrd-icon">🏭</span><span class="fcrd-title">CIF — Costos Indirectos de Fabricación</span></div>
       <div class="fcrd-body">
-        <div class="frow"><span class="fl">Sueldo diario</span><span class="fv c-blue">${$p(sueldoTotal)}</span></div>
-        <div class="frow"><span class="fl">Unidades vendidas</span><span class="fv">${nUnidades}</span></div>
-        ${nUnidades>0?`<div class="frow"><span class="fl">MOD por unidad</span><span class="fv c-amber">${$p(sueldoTotal/nUnidades)}</span></div>`:''}
+        <div class="frow"><span class="fl">Renta</span><span class="fv">${$p(rentaMes)}</span></div>
+        <div class="frow"><span class="fl">Luz</span><span class="fv">${$p(luzMes)}</span></div>
+        <div class="frow"><span class="fl">Gas</span><span class="fv">${$p(gasMes)}</span></div>
+        <div class="frow"><span class="fl">Otros</span><span class="fv">${$p(otrosMes)}</span></div>
+        <div class="frow"><span class="fl">Costo por día (÷${diasMes} días)</span><span class="fv c-amber">${$p(cifMes/diasMes)}</span></div>
       </div>
-      <div class="fcrd-total"><span class="ft-lbl">MOD total día</span><span class="ft-val c-amber">${$p(mod)}</span></div>
+      <div class="fcrd-total"><span class="ft-lbl">CIF mensual</span><span class="ft-val c-amber">${$p(cifMes)}</span></div>
     </div>
-    <div class="fcrd">
-      <div class="fcrd-head"><span class="fcrd-icon">🏭</span><span class="fcrd-title">CIF — Costos Indirectos</span></div>
-      <div class="fcrd-body">
-        <div class="frow"><span class="fl">Renta</span><span class="fv">${$p(parseFloat(document.getElementById('cfRenta').value)||0)}</span></div>
-        <div class="frow"><span class="fl">Luz</span><span class="fv">${$p(parseFloat(document.getElementById('cfLuz').value)||0)}</span></div>
-        <div class="frow"><span class="fl">Gas</span><span class="fv">${$p(parseFloat(document.getElementById('cfGas').value)||0)}</span></div>
-        <div class="frow"><span class="fl">Otros</span><span class="fv">${$p(parseFloat(document.getElementById('cfOtros').value)||0)}</span></div>
+
+    <div class="fcrd" style="grid-column:1/-1;border-color:rgba(13,207,176,.3)">
+      <div class="fcrd-head" style="background:rgba(13,207,176,.06)">
+        <span class="fcrd-icon">📊</span>
+        <span class="fcrd-title" style="color:var(--teal)">Ventas del día — ${fechaLabel}</span>
       </div>
-      <div class="fcrd-total"><span class="ft-lbl">CIF total día</span><span class="ft-val c-amber">${$p(cif)}</span></div>
-    </div>
-    <div class="fcrd" style="border-color:rgba(13,207,176,.3)">
-      <div class="fcrd-head" style="background:rgba(13,207,176,.05)"><span class="fcrd-icon">🧮</span><span class="fcrd-title" style="color:var(--teal)">Resultado del día</span></div>
       <div class="fcrd-body">
-        <div class="frow"><span class="fl">Ventas brutas</span><span class="fv c-teal">${$p(ventasBrutas)}</span></div>
-        <div class="frow"><span class="fl">CRT (MPD+MOD+CIF)</span><span class="fv">${$p(crt)}</span></div>
-        <div class="frow"><span class="fl">Resultado neto</span><span class="fv" style="color:${ventasBrutas-crt>=0?'var(--lime)':'var(--rose)'}">${ventasBrutas-crt>=0?'+':''}${$p(ventasBrutas-crt)}</span></div>
+        <div class="frow"><span class="fl">Transacciones</span><span class="fv">${vDia.length}</span></div>
+        <div class="frow"><span class="fl">Unidades vendidas</span><span class="fv">${unidades}</span></div>
+        <div class="frow"><span class="fl">Ingresos del día</span><span class="fv c-teal">${$p(ventasDia)}</span></div>
+        <div class="frow"><span class="fl">Costos fijos del día (MOD+CIF÷${diasMes})</span><span class="fv c-amber">${$p(cfDia)}</span></div>
+        <div class="frow"><span class="fl">Resultado del día</span>
+          <span class="fv" style="color:${resultado>=0?'var(--lime)':'var(--rose)'}">
+            ${resultado>=0 ? '✓ Ganancia: '+$p(resultado) : '✕ Pérdida: '+$p(Math.abs(resultado))}
+          </span>
+        </div>
+        ${!vDia.length ? '<div class="alt alt-warn" style="margin-top:8px;font-size:.75rem">Sin ventas registradas este día</div>' : ''}
       </div>
-      <div class="fcrd-total" style="border-top-color:rgba(13,207,176,.3)"><span class="ft-lbl">CRT = MPD+MOD+CIF</span><span class="ft-val" style="color:var(--teal)">${$p(crt)}</span></div>
     </div>`;
 
-  // PE BOX
-  document.getElementById('peBox').innerHTML=`
+  // ── Punto de Equilibrio — DÍA / SEMANA / MES ──
+  document.getElementById('peBox').innerHTML = `
     <div class="pe-head">
       <div style="font-size:1.2rem">⚖️</div>
-      <div class="pe-head-title">Punto de Equilibrio — Ventas mínimas del día</div>
+      <div class="pe-head-title">Punto de Equilibrio — ¿Cuánto necesitas vender?</div>
     </div>
     <div class="pe-body">
-      <div class="pe-eq">PE = Costos Fijos (MOD + CIF) ÷ Margen de Contribución%<br>MC% = (Ventas − MPD) ÷ Ventas = ${(mc*100).toFixed(1)}%</div>
-      <div class="pe-meta">
-        <div class="pe-meta-item"><div class="pe-meta-lbl">Costos fijos (MOD+CIF)</div><div class="pe-meta-val c-amber">${$p(cf)}</div></div>
-        <div class="pe-meta-item"><div class="pe-meta-lbl">Margen de contribución</div><div class="pe-meta-val c-blue">${(mc*100).toFixed(1)}%</div></div>
+      <div class="pe-eq">PE = MOD + CIF (costos fijos totales)<br>Lo mínimo que debes vender para no ganar ni perder</div>
+
+      <!-- Tres columnas: día, semana, mes -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:14px 0">
+
+        <div style="background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:14px;text-align:center">
+          <div class="xs c-gray" style="margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">📅 Por día</div>
+          <div class="pe-number" style="font-size:1.6rem">${$p(cfDia)}</div>
+          <div class="xs c-gray" style="margin-top:4px">${diasMes} días laborales</div>
+          <div style="margin-top:8px;height:4px;background:var(--s3);border-radius:99px;overflow:hidden">
+            <div style="height:100%;width:${pePct}%;background:linear-gradient(90deg,var(--blue),var(--teal));border-radius:99px;transition:width .6s"></div>
+          </div>
+          <div class="xs" style="margin-top:4px;color:${ventasDia>=cfDia?'var(--lime)':'var(--rose)'}">
+            ${ventasDia>=cfDia ? '✓ Alcanzado' : $p(cfDia-ventasDia)+' faltan'}
+          </div>
+        </div>
+
+        <div style="background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:14px;text-align:center">
+          <div class="xs c-gray" style="margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px">📆 Por semana</div>
+          <div class="pe-number" style="font-size:1.6rem">${$p(cfSemana)}</div>
+          <div class="xs c-gray" style="margin-top:4px">7 días corridos</div>
+        </div>
+
+        <div style="background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:14px;text-align:center;border-color:rgba(13,207,176,.3)">
+          <div class="xs" style="margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;color:var(--teal)">🗓️ Por mes</div>
+          <div class="pe-number" style="font-size:1.6rem;color:var(--teal)">${$p(cfMes)}</div>
+          <div class="xs c-gray" style="margin-top:4px">Total costos fijos</div>
+        </div>
       </div>
-      ${pe!==null?`
-        <div class="pe-meta-lbl">Ventas mínimas necesarias</div>
-        <div class="pe-number">${$p(pe)}</div>
-        <div class="pe-desc">al día para cubrir todos tus costos sin ganar ni perder</div>
-        <div class="pe-progress"><div class="pe-prog-fill" style="width:${pePct}%"></div></div>
-        <div class="pe-status">
-          <span class="mono xs c-gray">${pePct.toFixed(0)}% alcanzado</span>
-          <span style="font-size:.8rem;color:${ventasBrutas>=pe?'var(--lime)':'var(--rose)'}">
-            ${ventasBrutas>=pe?'✓ Punto de equilibrio alcanzado':'Faltan '+$p(pe-ventasBrutas)}
-          </span>
-        </div>`
-      :`<div class="alt alt-warn">No hay ventas este día · agrega ventas para calcular el PE</div>`}
+
+      <div style="background:var(--s2);border-radius:8px;padding:10px 14px;font-size:.8rem;color:var(--tx2)">
+        💡 Costos fijos mensuales totales: <span class="mono c-teal bold">${$p(cfMes)}</span>
+        (MOD <span class="mono">${$p(modMes)}</span> + CIF <span class="mono">${$p(cifMes)}</span>)
+        &nbsp;÷&nbsp; ${diasMes} días = <span class="mono c-amber">${$p(cfDia)}</span> por día
+      </div>
     </div>`;
 
-  // CIF ARTESANALES
-  renderCifArt(cif);
+  renderCifArt(cifMes / diasMes);
 }
+
 
 function renderCifArt(cifTotal){
   const arts=prods.filter(p=>p.esArtesanal);
